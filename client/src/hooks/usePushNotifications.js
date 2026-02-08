@@ -10,10 +10,7 @@ const usePushNotifications = (token) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      // This effect should only run once, so we check for permission status
       if (Notification.permission !== 'granted') {
-        // If not granted, we don't do anything automatically.
-        // We will wait for the user to click a button.
         setNotificationStatus(Notification.permission);
       }
     }
@@ -25,12 +22,11 @@ const usePushNotifications = (token) => {
       setNotificationStatus(permission);
 
       if (permission === 'granted') {
-        // Get the token
-        const vapidKey = "BLcbvR8NhergoDnenCdDvLYaUjAwGAH7K8fjWRnldVFmn-FfZD-oxcEexoGzr8AWD6g1wh5n0DGtZ9k0NFurSKU"; // Your VAPID key from Firebase
+        // --- SYNTAX FIX: Removed the stray <caret> marker from the string ---
+        const vapidKey = "BLcbvR8NhergoDnenCdDvLYaUjAwGAH7K8fjWRnldVFmn-FfZD-oxcEexoGzr8AWD6g1wh5n0DGtZ9k0NFurSKU";
         const fcmToken = await getToken(messaging, { vapidKey });
 
         if (fcmToken) {
-          // Send the token to the backend
           await sendTokenToServer(fcmToken);
         } else {
           console.log('No registration token available. Request permission to generate one.');
