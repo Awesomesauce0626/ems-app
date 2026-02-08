@@ -1,1 +1,101 @@
-import React, { useEffect, useState } from \'react\';\nimport { Link } from \'react-router-dom\';\nimport { useAuth } from \'../context/AuthContext\';\nimport API_BASE_URL from \'../api\'; // --- DEPLOYMENT FIX: Import the central API URL\nimport \'./AdminDashboard.css\';\n\nconst AdminDashboard = () => {\n    const [users, setUsers] = useState([]);\n    const [loading, setLoading] = useState(true);\n    const [error, setError] = useState(null);\n    const { token, logout } = useAuth(); \n\n    useEffect(() => {\n        const fetchUsers = async () => {\n            if (!token) return;\n            try {\n                // --- DEPLOYMENT FIX: Use the central API URL ---\n                const res = await fetch(`${API_BASE_URL}/api/admin/users\`, {\n                    headers: { \'Authorization\': `Bearer ${token}` },\n                });\n                if (!res.ok) throw new Error(\'Failed to fetch users\');\n                const data = await res.json();\n                setUsers(data);\n            } catch (err) {\n                setError(err.message);\n            } finally {\n                setLoading(false);\n            }\n        };\n        fetchUsers();\n    }, [token]);\n\n    const handleRoleChange = async (userId, newRole) => {\n        try {\n            // --- DEPLOYMENT FIX: Use the central API URL ---\n            const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/role`, {\n                method: \'PATCH\',\n                headers: { \'Content-Type\': \'application/json\', \'Authorization\': `Bearer ${token}` },\n                body: JSON.stringify({ role: newRole }),\n            });\n            if (!res.ok) throw new Error(\'Failed to update role\');\n            setUsers(users.map(user => user._id === userId ? { ...user, role: newRole } : user));\n            alert(\'User role updated successfully!\');\n        } catch (err) {\n            setError(err.message);\n        }\n    };\n\n    if (loading) return <div className=\"admin-loading\">Loading users...</div>;\n\n    return (\n        <div className=\"admin-dashboard-container\">\n            <header className=\"admin-header\">\n                <h1>Administrator Dashboard</h1>\n                <nav className=\"admin-nav\">\n                    <Link to=\"/dashboard/ems\" className=\"nav-link\">EMS Dashboard</Link>\n                    <Link to=\"/dashboard/citizen\" className=\"nav-link\">Citizen Dashboard</Link>\n                    <button onClick={logout} className=\"nav-link logout-btn\">Logout</button>\n                </nav>\n            </header>\n\n            {error && <div className=\"admin-error\">Error: {error}</div>}\n\n            <div className=\"user-table-container\">\n                <h2 className=\"table-header\">User Management</h2>\n                <table className=\"user-table\">\n                    <thead>\n                        <tr>\n                            <th>Name</th>\n                            <th>Email</th>\n                            <th>Current Role</th>\n                            <th>Actions</th>\n                        </tr>\n                    </thead>\n                    <tbody>\n                        {users.map(user => (\n                            <tr key={user._id}>\n                                <td>{user.firstName} {user.lastName}</td>\n                                <td>{user.email}</td>\n                                <td>{user.role}</td>\n                                <td>\n                                    <select \n                                        defaultValue={user.role} \n                                        onChange={(e) => handleRoleChange(user._id, e.target.value)} \n                                        className=\"role-select\"\n                                        disabled={user.email === \'i.am.sam052408@gmail.com\'} \n                                    >\n                                        <option value=\"citizen\">Citizen</option>\n                                        <option value=\"ems_personnel\">EMS Personnel</option>\n                                        <option value=\"admin\">Admin</option>\n                                    </select>\n                                </td>\n                            </tr>\n                        ))}\n                    </tbody>\n                </table>\n            </div>\n        </div>\n    );\n};\n\nexport default AdminDashboard;\n
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
+import './AdminDashboard.css';
+
+const AdminDashboard = () => {
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const { token, logout } = useAuth();
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            if (!token) return;
+            try {
+                // --- DEPLOYMENT FIX: Use the central API URL (stray backslash removed) ---
+                const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (!res.ok) throw new Error('Failed to fetch users');
+                const data = await res.json();
+                setUsers(data);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUsers();
+    }, [token]);
+
+    const handleRoleChange = async (userId, newRole) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/role`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ role: newRole }),
+            });
+            if (!res.ok) throw new Error('Failed to update role');
+            setUsers(users.map(user => user._id === userId ? { ...user, role: newRole } : user));
+            alert('User role updated successfully!');
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    if (loading) return <div className="admin-loading">Loading users...</div>;
+
+    return (
+        <div className="admin-dashboard-container">
+            <header className="admin-header">
+                <h1>Administrator Dashboard</h1>
+                <nav className="admin-nav">
+                    <Link to="/dashboard/ems" className="nav-link">EMS Dashboard</Link>
+                    <Link to="/dashboard/citizen" className="nav-link">Citizen Dashboard</Link>
+                    <button onClick={logout} className="nav-link logout-btn">Logout</button>
+                </nav>
+            </header>
+
+            {error && <div className="admin-error">Error: {error}</div>}
+
+            <div className="user-table-container">
+                <h2 className="table-header">User Management</h2>
+                <table className="user-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Current Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.map(user => (
+                            <tr key={user._id}>
+                                <td>{user.firstName} {user.lastName}</td>
+                                <td>{user.email}</td>
+                                <td>{user.role}</td>
+                                <td>
+                                    <select
+                                        defaultValue={user.role}
+                                        onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                                        className="role-select"
+                                        disabled={user.email === 'i.am.sam052408@gmail.com'}
+                                    >
+                                        <option value="citizen">Citizen</option>
+                                        <option value="ems_personnel">EMS Personnel</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+export default AdminDashboard;
