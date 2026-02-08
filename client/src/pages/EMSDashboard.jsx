@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import MapView from '../components/MapView';
-import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
+import API_BASE_URL from '../api';
 import './EMSDashboard.css';
 
 const EMSDashboard = () => {
@@ -22,7 +22,6 @@ const EMSDashboard = () => {
         setLoading(true);
         setError(null);
         try {
-          // --- DEPLOYMENT FIX: Use the central API URL ---
           const res = await fetch(`${API_BASE_URL}/api/alerts`, {
             headers: { 'Authorization': `Bearer ${token}` },
           });
@@ -60,12 +59,19 @@ const EMSDashboard = () => {
       );
     };
 
+    // --- ARCHIVE: Handle the real-time archival event ---
+    const handleAlertArchived = ({ alertId }) => {
+        setAlerts((prevAlerts) => prevAlerts.filter(alert => alert._id !== alertId));
+    };
+
     socket.on('new-alert', handleNewAlert);
     socket.on('alert-status-update', handleAlertUpdate);
+    socket.on('alert-archived', handleAlertArchived);
 
     return () => {
       socket.off('new-alert', handleNewAlert);
       socket.off('alert-status-update', handleAlertUpdate);
+      socket.off('alert-archived', handleAlertArchived);
     };
   }, [socket, alarmSound]);
 

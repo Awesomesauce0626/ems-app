@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Alert = require('../models/Alert');
+const CompletedAlert = require('../models/CompletedAlert'); // --- ARCHIVE: Import the new model
 const auth = require('../middleware/auth');
 
 router.post('/', auth, async (req, res) => {
@@ -8,20 +9,19 @@ router.post('/', auth, async (req, res) => {
     const {
       reporterName,
       reporterPhone,
-      location, // Optional map coordinates
-      address,   // Required text address
+      location,
+      address,
       incidentType,
       description,
       patientCount,
     } = req.body;
 
-    // --- DEPLOYMENT FIX: Make text address required ---
     if (!address) {
         return res.status(400).json({ message: 'Address / Location Description is required.' });
     }
 
     const formattedLocation = {
-        latitude: location?.lat, // Use optional chaining
+        latitude: location?.lat,
         longitude: location?.lng,
         address: address,
     };
@@ -54,6 +54,19 @@ router.post('/', auth, async (req, res) => {
     console.error("Alert Creation Error:", error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
+});
+
+// --- ARCHIVE: New endpoint to fetch archived alerts ---
+router.get('/completed', auth, async (req, res) => {
+    try {
+        const completedAlerts = await CompletedAlert.find()
+            .populate('userId', 'email firstName lastName')
+            .populate('assignedEMS', 'email firstName lastName phoneNumber')
+            .sort({ archivedAt: -1 });
+        res.json(completedAlerts);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
 });
 
 router.get('/', auth, async (req, res) => {
@@ -99,26 +112,41 @@ router.patch('/:id/status', auth, async (req, res) => {
       return res.status(404).json({ message: 'Alert not found' });
     }
 
-    alert.status = status;
-    alert.statusHistory.push({ status, note, userId: req.user.userId });
-    alert.updatedAt = new Date();
+    // --- ARCHIVE LOGIC ---
+    if (status === 'completed') {
+        const alertData = alert.toObject();
+        delete alertData._id; // Remove the original _id to allow for a new one in the archive
+        const completedAlert = new CompletedAlert(alertData);
+        await completedAlert.save();
+        await Alert.findByIdAndDelete(req.params.id);
 
-    if (!alert.assignedEMS && (userRole === 'ems_personnel' || userRole === 'admin')) {
-      alert.assignedEMS = req.user.userId;
+        // Notify clients to remove the alert from their active list
+        req.io.emit('alert-archived', { alertId: req.params.id });
+
+        return res.json({ message: 'Alert completed and archived.' });
+
+    } else {
+        alert.status = status;
+        alert.statusHistory.push({ status, note, userId: req.user.userId });
+        alert.updatedAt = new Date();
+
+        if (!alert.assignedEMS && (userRole === 'ems_personnel' || userRole === 'admin')) {
+          alert.assignedEMS = req.user.userId;
+        }
+
+        await alert.save();
+
+        const populatedAlert = await Alert.findById(alert._id)
+            .populate('userId', 'email firstName lastName')
+            .populate('assignedEMS', 'email firstName lastName phoneNumber');
+
+        req.io.emit('alert-status-update', populatedAlert);
+
+        res.json({
+          message: 'Alert status updated',
+          alert: populatedAlert,
+        });
     }
-
-    await alert.save();
-
-    const populatedAlert = await Alert.findById(alert._id)
-        .populate('userId', 'email firstName lastName')
-        .populate('assignedEMS', 'email firstName lastName phoneNumber');
-
-    req.io.emit('alert-status-update', populatedAlert);
-
-    res.json({
-      message: 'Alert status updated',
-      alert: populatedAlert,
-    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
