@@ -1,0 +1,12 @@
+# Environment variables
+.env
+
+# Dependencies
+node_modules/
+client/node_modules/
+
+# Production build output
+client/dist/
+
+# IDE-specific files
+.idea/

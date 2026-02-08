@@ -15,6 +15,16 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png',
 });
 
+// --- DEPLOYMENT FIX: Use value/label pairs for status options ---
+const statusOptions = [
+  { value: 'new', label: 'New' },
+  { value: 'responding', label: 'Responding' },
+  { value: 'en_route', label: 'En-route' },
+  { value: 'on_scene', label: 'On Scene' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
 const AlertDetails = () => {
   const { id } = useParams();
   const { token, user } = useAuth();
@@ -74,15 +84,17 @@ const AlertDetails = () => {
   if (error) return <div>Error: {error}</div>;
   if (!alert) return <div>Alert not found.</div>;
 
-  const statusOptions = ['Pending', 'Responding', 'En-route', 'On Scene', 'Transporting', 'Completed', 'Cancelled'];
   const canUpdateStatus = user?.role === 'ems_personnel' || user?.role === 'admin';
+
+  // Find the label for the current status to display it correctly
+  const currentStatusLabel = statusOptions.find(opt => opt.value === alert.status)?.label || alert.status;
 
   return (
     <div className="alert-details-container">
       <header className="details-header">
         <h1>Alert Details</h1>
         <span className={`status-badge-lg status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}>
-          {alert.status}
+          {currentStatusLabel}
         </span>
       </header>
 
@@ -90,7 +102,6 @@ const AlertDetails = () => {
         <div className="details-info-panel">
           <h2>Incident Information</h2>
           <p><strong>Type:</strong> {alert.incidentType}</p>
-          {/* --- NEW: Display the text address if it exists --- */}
           {alert.location?.address && <p><strong>Address:</strong> {alert.location.address}</p>}
           <p><strong>Description:</strong> {alert.description}</p>
           <p><strong>Patients:</strong> {alert.patientCount}</p>
@@ -102,12 +113,15 @@ const AlertDetails = () => {
           <hr />
           <h2>Timeline</h2>
           <ul className="status-history">
-            {alert.statusHistory.map((entry, index) => (
-              <li key={index}>
-                <strong>{entry.status}</strong> - <small>{new Date(entry.timestamp).toLocaleString()}</small>
-                {entry.note && <p className="note">Note: {entry.note}</p>}
-              </li>
-            ))}
+            {alert.statusHistory.map((entry, index) => {
+                const entryStatusLabel = statusOptions.find(opt => opt.value === entry.status)?.label || entry.status;
+                return (
+                    <li key={index}>
+                        <strong>{entryStatusLabel}</strong> - <small>{new Date(entry.timestamp).toLocaleString()}</small>
+                        {entry.note && <p className="note">Note: {entry.note}</p>}
+                    </li>
+                )
+            })}
           </ul>
         </div>
 
@@ -130,7 +144,7 @@ const AlertDetails = () => {
                 <div className="form-group">
                   <label>New Status</label>
                   <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                    {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    {statusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
