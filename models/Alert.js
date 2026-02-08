@@ -19,7 +19,7 @@ const alertSchema = new mongoose.Schema({
       'cardiac_arrest',
       'respiratory_distress',
       'severe_bleeding',
-      'vehicular_accident', // Added
+      'vehicular_accident',
       'trauma',
       'stroke',
       'allergic_reaction',
@@ -44,6 +44,7 @@ const alertSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  // --- DEPLOYMENT FIX: Add userId to status history to log who made the change ---
   statusHistory: [{
     status: String,
     timestamp: {
@@ -51,6 +52,10 @@ const alertSchema = new mongoose.Schema({
       default: Date.now,
     },
     note: String,
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }
   }],
   createdAt: {
     type: Date,
