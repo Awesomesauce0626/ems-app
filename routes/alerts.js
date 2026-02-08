@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Alert = require('../models/Alert');
-const CompletedAlert = require('../models/CompletedAlert'); // --- ARCHIVE: Import the new model
+const User = require('../models/User'); // --- PUSH NOTIFICATIONS: Import User model
+const CompletedAlert = require('../models/CompletedAlert');
 const auth = require('../middleware/auth');
+const admin = require('firebase-admin'); // --- PUSH NOTIFICATIONS: Import Firebase Admin
 
 router.post('/', auth, async (req, res) => {
   try {
@@ -46,6 +48,27 @@ router.post('/', auth, async (req, res) => {
 
     req.io.emit('new-alert', populatedAlert);
 
+    // --- PUSH NOTIFICATIONS: Send notifications to all relevant staff ---
+    const staffUsers = await User.find({ role: { $in: ['ems_personnel', 'admin'] } });
+    const tokens = staffUsers.flatMap(user => user.fcmTokens);
+
+    if (tokens.length > 0) {
+        const message = {
+            notification: {
+                title: 'New Emergency Alert!',
+                body: `Incident: ${incidentType} at ${address}`,
+            },
+            tokens: tokens,
+        };
+
+        try {
+            await admin.messaging().sendMulticast(message);
+            console.log('Push notifications sent successfully.');
+        } catch (error) {
+            console.error('Error sending push notifications:', error);
+        }
+    }
+
     res.status(201).json({
       message: 'Alert created successfully',
       alert: populatedAlert,
@@ -56,7 +79,6 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// --- ARCHIVE: New endpoint to fetch archived alerts ---
 router.get('/completed', auth, async (req, res) => {
     try {
         const completedAlerts = await CompletedAlert.find()
@@ -112,15 +134,13 @@ router.patch('/:id/status', auth, async (req, res) => {
       return res.status(404).json({ message: 'Alert not found' });
     }
 
-    // --- ARCHIVE LOGIC ---
     if (status === 'completed') {
         const alertData = alert.toObject();
-        delete alertData._id; // Remove the original _id to allow for a new one in the archive
+        delete alertData._id;
         const completedAlert = new CompletedAlert(alertData);
         await completedAlert.save();
         await Alert.findByIdAndDelete(req.params.id);
 
-        // Notify clients to remove the alert from their active list
         req.io.emit('alert-archived', { alertId: req.params.id });
 
         return res.json({ message: 'Alert completed and archived.' });

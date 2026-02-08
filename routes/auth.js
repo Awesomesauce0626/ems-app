@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const auth = require('../middleware/auth'); // --- PUSH NOTIFICATIONS: Import auth middleware
 
 router.post('/register', async (req, res) => {
   try {
@@ -36,6 +37,9 @@ router.post('/register', async (req, res) => {
         id: user._id,
         email: user.email,
         role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
       },
     });
   } catch (error) {
@@ -69,11 +73,34 @@ router.post('/login', async (req, res) => {
         id: user._id,
         email: user.email,
         role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
       },
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
+});
+
+// --- PUSH NOTIFICATIONS: Endpoint to save a user's FCM token ---
+router.post('/save-fcm-token', auth, async (req, res) => {
+    try {
+        const { token: fcmToken } = req.body;
+        const userId = req.user.userId;
+
+        // Find the user and add the new token if it doesn't already exist
+        const user = await User.findById(userId);
+        if (user && !user.fcmTokens.includes(fcmToken)) {
+            user.fcmTokens.push(fcmToken);
+            await user.save();
+        }
+
+        res.status(200).json({ message: 'FCM token saved successfully.' });
+    } catch (error) {
+        console.error("FCM Token Save Error:", error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
 });
 
 router.post('/quick-access', async (req, res) => {

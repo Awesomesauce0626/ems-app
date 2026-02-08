@@ -4,7 +4,14 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require("socket.io");
 const path = require('path');
+const admin = require('firebase-admin'); // --- PUSH NOTIFICATIONS: Import Firebase Admin
 require('dotenv').config();
+
+// --- PUSH NOTIFICATIONS: Initialize Firebase Admin ---
+const serviceAccount = require('./firebase-service-account-key.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
 const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
@@ -58,7 +65,7 @@ io.on('connection', (socket) => {
 
 // --- Start Server Logic ---
 const PORT = process.env.PORT || 5000;
-const HOST = '0.0.0.0'; // --- FINAL DEPLOYMENT FIX: Listen on all network interfaces
+const HOST = '0.0.0.0';
 
 const startServer = async () => {
   try {
@@ -67,7 +74,6 @@ const startServer = async () => {
       useUnifiedTopology: true,
     });
     console.log('MongoDB connected successfully.');
-    // --- FINAL DEPLOYMENT FIX: Explicitly use HOST ---
     httpServer.listen(PORT, HOST, () => {
       console.log(`Server running on http://${HOST}:${PORT}`);
     });

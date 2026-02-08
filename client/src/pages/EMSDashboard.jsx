@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import usePushNotifications from '../hooks/usePushNotifications'; // --- PUSH NOTIFICATIONS: Import the hook
 import MapView from '../components/MapView';
 import API_BASE_URL from '../api';
 import './EMSDashboard.css';
@@ -10,10 +11,13 @@ const EMSDashboard = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isMonitoring, setIsMonitoring] = useState(false); // --- ALARM FIX: State to track monitoring status
+  const [isMonitoring, setIsMonitoring] = useState(false);
   const socket = useSocket();
   const { token, user, logout } = useAuth();
   const navigate = useNavigate();
+
+  // --- PUSH NOTIFICATIONS: Initialize the hook ---
+  const { requestPermissionAndGetToken, notificationStatus } = usePushNotifications(token);
 
   const alarmSound = useMemo(() => new Audio('/alarm.mp3'), []);
 
@@ -44,7 +48,6 @@ const EMSDashboard = () => {
     }
   }, [token]);
 
-  // --- ALARM FIX: This effect now only runs when monitoring is active ---
   useEffect(() => {
     if (!socket || !isMonitoring) return;
 
@@ -74,15 +77,13 @@ const EMSDashboard = () => {
       socket.off('alert-status-update', handleAlertUpdate);
       socket.off('alert-archived', handleAlertArchived);
     };
-  }, [socket, isMonitoring, alarmSound]); // Add isMonitoring to dependency array
+  }, [socket, isMonitoring, alarmSound]);
 
   const handleAlertClick = (alertId) => {
     navigate(`/alert/${alertId}`);
   };
 
-  // --- ALARM FIX: Function to handle starting monitoring ---
   const startMonitoring = () => {
-    // Play a short silent sound to unlock audio playback
     alarmSound.play().then(() => alarmSound.pause());
     setIsMonitoring(true);
   };
@@ -106,7 +107,14 @@ const EMSDashboard = () => {
 
       {error && <div className="dashboard-error">Error: {error}</div>}
 
-      {/* --- ALARM FIX: Conditional rendering for monitoring button/dashboard content --- */}
+      {/* --- PUSH NOTIFICATIONS: Notification permission prompt -- */}
+      {notificationStatus !== 'granted' && (
+        <div className="notification-prompt">
+          <p>Enable push notifications to receive alerts even when the app is in the background.</p>
+          <button onClick={requestPermissionAndGetToken}>Enable Notifications</button>
+        </div>
+      )}
+
       {!isMonitoring ? (
         <div className="monitoring-gate">
             <h2>Ready to Monitor?</h2>

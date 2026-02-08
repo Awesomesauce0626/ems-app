@@ -16,8 +16,13 @@ const userSchema = new mongoose.Schema({
   phoneNumber: String,
   role: {
     type: String,
-    enum: ['citizen', 'ems_personnel', 'admin'], // Added 'admin' role
+    enum: ['citizen', 'ems_personnel', 'admin'],
     default: 'citizen',
+  },
+  // --- PUSH NOTIFICATIONS: Field to store user device tokens ---
+  fcmTokens: {
+    type: [String],
+    default: [],
   },
   quickAccessEnabled: {
     type: Boolean,
