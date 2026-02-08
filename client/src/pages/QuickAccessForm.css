@@ -1,0 +1,59 @@
+.quick-form-container {
+  padding: 2rem;
+  max-width: 1200px; /* Increase max-width for side-by-side layout */
+  margin: 2rem auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.quick-form-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.quick-form-header h1 {
+  color: #EE3224;
+  margin-bottom: 0.5rem;
+}
+
+.quick-form-header p {
+  color: #6c757d;
+}
+
+.map-form-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.map-wrapper {
+  height: 500px; /* Give the map a fixed height */
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+.form-wrapper {
+  /* The alert form will naturally fill this space */
+}
+
+.location-error, .submission-error {
+  color: #EE3224;
+  text-align: center;
+  font-weight: 500;
+  margin-top: 1rem; /* Use margin-top instead of margin-bottom */
+  padding: 1rem;
+  background-color: rgba(238, 50, 36, 0.1);
+  border-radius: 4px;
+}
+
+@media (max-width: 992px) {
+  .map-form-container {
+    grid-template-columns: 1fr; /* Stack on smaller screens */
+  }
+  .map-wrapper {
+    height: 300px; /* Reduce height for mobile */
+  }
+}

@@ -1,0 +1,161 @@
+.alert-details-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 2rem auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.details-header h1 {
+  margin: 0;
+  color: #343a40;
+}
+
+.status-badge-lg {
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.details-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.details-info-panel h2 {
+  font-size: 1.3rem;
+  color: #495057;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.details-info-panel p {
+  margin: 0.5rem 0;
+  color: #6c757d;
+  line-height: 1.6;
+}
+
+.details-info-panel hr {
+  border: 0;
+  border-top: 1px solid #e9ecef;
+  margin: 1.5rem 0;
+}
+
+.status-history {
+  list-style-type: none;
+  padding: 0;
+  margin-top: 1rem;
+}
+
+.status-history li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.status-history li:last-child {
+  border-bottom: none;
+}
+
+.status-history strong {
+  color: #343a40;
+}
+
+.status-history small {
+  color: #6c757d;
+  margin-left: 0.5rem;
+}
+
+.note {
+  font-size: 0.9rem;
+  color: #495057;
+  background-color: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+.details-map-container {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+  margin-bottom: 2rem;
+}
+
+.status-update-form h3 {
+  font-size: 1.3rem;
+  color: #495057;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.status-update-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.status-update-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #495057;
+}
+
+.status-update-form select,
+.status-update-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: 'Public Sans', sans-serif;
+}
+
+.status-update-form textarea {
+    min-height: 80px;
+}
+
+.status-update-form button {
+    width: 100%;
+    padding: 0.8rem;
+    background-color: #EE3224;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.status-update-form button:hover {
+    background-color: #d62112;
+}
+
+/* Re-using status colors from dashboard */
+.status-pending, .status-badge-lg.status-pending { background-color: #ffc107; color: #212529; }
+.status-responding, .status-badge-lg.status-responding { background-color: #0d6efd; }
+.status-en-route, .status-badge-lg.status-en-route { background-color: #0dcaf0; }
+.status-on-scene, .status-badge-lg.status-on-scene { background-color: #fd7e14; }
+.status-transporting, .status-badge-lg.status-transporting { background-color: #6f42c1; }
+.status-completed, .status-badge-lg.status-completed { background-color: #198754; }
+.status-cancelled, .status-badge-lg.status-cancelled { background-color: #6c757d; }
+
+@media (max-width: 992px) {
+  .details-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
