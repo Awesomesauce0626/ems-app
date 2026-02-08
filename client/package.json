@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^5.0.0",
+    "@capacitor/core": "^5.0.0",
     "@hookform/resolvers": "^2.9.11",
     "leaflet": "^1.9.3",
     "react": "^18.2.0",
@@ -20,6 +22,7 @@
     "zod": "^3.20.6"
   },
   "devDependencies": {
+    "@capacitor/cli": "^5.0.0",
     "@types/react": "^18.0.27",
     "@types/react-dom": "^18.0.10",
     "@vitejs/plugin-react": "^3.1.0",

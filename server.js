@@ -17,16 +17,15 @@ const httpServer = http.createServer(app);
 const isProduction = process.env.NODE_ENV === 'production';
 const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
 
-// --- FINAL, DEFINITIVE FIX: Simplified and more robust CORS for development ---
 const corsOptions = {
   origin: isProduction ? clientURL : 'http://localhost:5173',
-  optionsSuccessStatus: 200 // For legacy browser support
+  optionsSuccessStatus: 200
 };
 
 const io = new Server(httpServer, { cors: corsOptions });
 
 // --- Middleware ---
-app.use(cors(corsOptions)); // Use the simplified cors options
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use((req, res, next) => {
   req.io = io;
@@ -59,6 +58,7 @@ io.on('connection', (socket) => {
 
 // --- Start Server Logic ---
 const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0'; // --- FINAL DEPLOYMENT FIX: Listen on all network interfaces
 
 const startServer = async () => {
   try {
@@ -67,8 +67,9 @@ const startServer = async () => {
       useUnifiedTopology: true,
     });
     console.log('MongoDB connected successfully.');
-    httpServer.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    // --- FINAL DEPLOYMENT FIX: Explicitly use HOST ---
+    httpServer.listen(PORT, HOST, () => {
+      console.log(`Server running on http://${HOST}:${PORT}`);
     });
   } catch (err) {
     console.error('MongoDB connection error:', err);

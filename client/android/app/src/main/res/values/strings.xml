@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PRC EMS</string>
+    <string name="title_activity_main">PRC EMS</string>
+    <string name="package_name">com.prc_ems.app</string>
+    <string name="custom_url_scheme">com.prc_ems.app</string>
+</resources>
