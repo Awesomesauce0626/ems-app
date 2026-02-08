@@ -9,7 +9,8 @@ const usePushNotifications = (token) => {
   const [notificationStatus, setNotificationStatus] = useState('default');
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    // --- PLATFORM FIX: Add a more robust check for Notification API support ---
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.Notification) {
       if (Notification.permission !== 'granted') {
         setNotificationStatus(Notification.permission);
       }
@@ -22,7 +23,6 @@ const usePushNotifications = (token) => {
       setNotificationStatus(permission);
 
       if (permission === 'granted') {
-        // --- SYNTAX FIX: Removed the stray <caret> marker from the string ---
         const vapidKey = "BLcbvR8NhergoDnenCdDvLYaUjAwGAH7K8fjWRnldVFmn-FfZD-oxcEexoGzr8AWD6g1wh5n0DGtZ9k0NFurSKU";
         const fcmToken = await getToken(messaging, { vapidKey });
 
