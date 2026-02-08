@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './AlertDetails.css';
@@ -26,17 +27,12 @@ const AlertDetails = () => {
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- DIAGNOSTIC LOG ---
-  // This will show us exactly what the component sees as the user object.
-  useEffect(() => {
-    console.log("User object in AlertDetails:", user);
-  }, [user]);
-
   useEffect(() => {
     const fetchAlertDetails = async () => {
         if (!token) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/alerts/${id}`, {
+        // --- DEPLOYMENT FIX: Use the central API URL ---
+        const res = await fetch(`${API_BASE_URL}/api/alerts/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error('Failed to fetch alert details');
@@ -56,7 +52,8 @@ const AlertDetails = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/alerts/${id}/status`, {
+      // --- DEPLOYMENT FIX: Use the central API URL ---
+      const res = await fetch(`${API_BASE_URL}/api/alerts/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -80,9 +77,6 @@ const AlertDetails = () => {
   if (!alert) return <div>Alert not found.</div>;
 
   const statusOptions = ['Pending', 'Responding', 'En-route', 'On Scene', 'Transporting', 'Completed', 'Cancelled'];
-
-  // --- FINAL AND DEFINITIVE FIX ---
-  // The condition is now correct and will show the form for both roles.
   const canUpdateStatus = user?.role === 'ems_personnel' || user?.role === 'admin';
 
   return (

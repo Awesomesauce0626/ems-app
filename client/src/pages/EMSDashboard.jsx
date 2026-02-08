@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import MapView from '../components/MapView';
+import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
 import './EMSDashboard.css';
 
 const EMSDashboard = () => {
@@ -10,7 +11,7 @@ const EMSDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const socket = useSocket();
-  const { token, user, logout } = useAuth(); // Get user object for role check
+  const { token, user, logout } = useAuth();
   const navigate = useNavigate();
 
   const alarmSound = useMemo(() => new Audio('/alarm.mp3'), []);
@@ -21,7 +22,8 @@ const EMSDashboard = () => {
         setLoading(true);
         setError(null);
         try {
-          const res = await fetch('http://localhost:5000/api/alerts', {
+          // --- DEPLOYMENT FIX: Use the central API URL ---
+          const res = await fetch(`${API_BASE_URL}/api/alerts`, {
             headers: { 'Authorization': `Bearer ${token}` },
           });
           if (!res.ok) {
@@ -80,7 +82,6 @@ const EMSDashboard = () => {
             <h1>EMS Control Tower</h1>
         </div>
         <nav className="dashboard-nav">
-            {/* --- ADMIN: Conditionally show Admin Dashboard link --- */}
             {user?.role === 'admin' && (
                 <Link to="/dashboard/admin" className="nav-link admin-link">Return to Admin</Link>
             )}

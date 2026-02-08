@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
+import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
 import '../components/AlertForm.css';
 import './QuickAccessForm.css';
 
 const QuickAccessForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [location, setLocation] = useState(null); // This will hold the final location
-  const [initialCenter, setInitialCenter] = useState([14.113, 122.95]); // Default center
+  const [location, setLocation] = useState(null);
+  const [initialCenter, setInitialCenter] = useState([14.113, 122.95]);
   const [locationError, setLocationError] = useState(null);
 
   useEffect(() => {
@@ -24,11 +25,10 @@ const QuickAccessForm = () => {
           lng: position.coords.longitude,
         };
         setInitialCenter([initialPos.lat, initialPos.lng]);
-        setLocation(initialPos); // Set the initial location for submission
+        setLocation(initialPos);
       },
       () => {
         setLocationError('Unable to retrieve your location. Please drag the marker to the correct spot.');
-        // If we can't get GPS, the user MUST manually place the marker.
         setLocation(null);
       }
     );
@@ -49,7 +49,8 @@ const QuickAccessForm = () => {
     }
 
     try {
-      const quickAccessRes = await fetch('http://localhost:5000/api/auth/quick-access', { // Absolute URL
+      // --- DEPLOYMENT FIX: Use the central API URL ---
+      const quickAccessRes = await fetch(`${API_BASE_URL}/api/auth/quick-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reporterName: data.reporterName, reporterPhone: data.reporterPhone }),
@@ -59,7 +60,8 @@ const QuickAccessForm = () => {
       const { token } = await quickAccessRes.json();
 
       const alertData = { ...data, location };
-      const alertRes = await fetch('http://localhost:5000/api/alerts', { // Absolute URL
+      // --- DEPLOYMENT FIX: Use the central API URL ---
+      const alertRes = await fetch(`${API_BASE_URL}/api/alerts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

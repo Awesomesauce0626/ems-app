@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
+import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
 import './Auth.css';
 
 const schema = z.object({
@@ -25,7 +26,8 @@ const Register = () => {
     setIsSubmitting(true);
     setError(null);
     try {
-      const res = await fetch('/api/auth/register', {
+      // --- DEPLOYMENT FIX: Use the central API URL ---
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
