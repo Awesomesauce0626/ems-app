@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
-import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
+import API_BASE_URL from '../api';
 import '../components/AlertForm.css';
 import './QuickAccessForm.css';
 
 const QuickAccessForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [location, setLocation] = useState(null);
+  const [location, setLocation] = useState(null); // Optional map location
   const [initialCenter, setInitialCenter] = useState([14.113, 122.95]);
   const [locationError, setLocationError] = useState(null);
 
@@ -28,7 +28,7 @@ const QuickAccessForm = () => {
         setLocation(initialPos);
       },
       () => {
-        setLocationError('Unable to retrieve your location. Please drag the marker to the correct spot.');
+        setLocationError('Could not get your location automatically. The map is optional.');
         setLocation(null);
       }
     );
@@ -42,14 +42,7 @@ const QuickAccessForm = () => {
     setIsSubmitting(true);
     setError(null);
 
-    if (!location) {
-      setError("Location is required. Please drag the marker to the incident location.");
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      // --- DEPLOYMENT FIX: Use the central API URL ---
       const quickAccessRes = await fetch(`${API_BASE_URL}/api/auth/quick-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,8 +52,9 @@ const QuickAccessForm = () => {
       if (!quickAccessRes.ok) throw new Error('Failed to get quick access token');
       const { token } = await quickAccessRes.json();
 
+      // Map coordinates are now optional
       const alertData = { ...data, location };
-      // --- DEPLOYMENT FIX: Use the central API URL ---
+
       const alertRes = await fetch(`${API_BASE_URL}/api/alerts`, {
         method: 'POST',
         headers: {
@@ -85,11 +79,12 @@ const QuickAccessForm = () => {
     <div className="quick-form-container">
       <header className="quick-form-header">
         <h1>Emergency Alert</h1>
-        <p>Drag the marker to the exact incident location, then fill out the details below.</p>
+        <p>Fill out the details below. The location description is required.</p>
       </header>
 
       <div className="map-form-container">
         <div className="map-wrapper">
+          <p className="map-optional-text">Optional: Drag the pin to the exact incident location.</p>
           <LocationPickerMap center={initialCenter} onLocationChange={handleLocationChange} />
         </div>
 

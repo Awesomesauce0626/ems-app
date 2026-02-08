@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
+import API_BASE_URL from '../api';
 import './CitizenDashboard.css';
 
 const CitizenDashboard = () => {
@@ -21,7 +22,7 @@ const CitizenDashboard = () => {
     const fetchUserAlerts = async () => {
       if (!token || !user) return;
       try {
-        const res = await fetch('http://localhost:5000/api/alerts', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`${API_BASE_URL}/api/alerts`, { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error('Failed to fetch alerts');
         const allAlerts = await res.json();
         const userAlerts = allAlerts.filter(a => a.userId?._id === user.id);
@@ -46,7 +47,7 @@ const CitizenDashboard = () => {
         setIsModalOpen(true);
       },
       () => {
-        setLocationError('Could not get GPS. Please drag the marker to the correct spot.');
+        setLocationError('Could not get GPS. The map is optional.');
         setLocation(null);
         setIsModalOpen(true);
       }
@@ -59,14 +60,11 @@ const CitizenDashboard = () => {
 
   const handleAlertSubmit = async (data) => {
     setIsSubmitting(true);
-    if (!location) {
-      setError("Location is required. Please drag the marker to the incident location.");
-      setIsSubmitting(false);
-      return;
-    }
+    setError(null);
+
     try {
       const alertData = { ...data, location, reporterName: `${user.firstName} ${user.lastName}`, reporterPhone: user.phoneNumber };
-      const res = await fetch('http://localhost:5000/api/alerts', {
+      const res = await fetch(`${API_BASE_URL}/api/alerts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(alertData),
@@ -90,7 +88,6 @@ const CitizenDashboard = () => {
           <p>Your personal emergency hub.</p>
         </div>
         <nav className="cd-nav">
-            {/* --- ADMIN: Conditionally show Admin Dashboard link --- */}
             {user?.role === 'admin' && (
                 <Link to="/dashboard/admin" className="nav-link admin-link">Return to Admin</Link>
             )}
@@ -130,7 +127,8 @@ const CitizenDashboard = () => {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="modal-map-wrapper">
-            <LocationPickerMap center={initialCenter} onLocationChange={handleLocationChange} />
+          <p className="map-optional-text">Optional: Drag the pin to the exact incident location.</p>
+          <LocationPickerMap center={initialCenter} onLocationChange={handleLocationChange} />
         </div>
         {locationError && <p className="location-error">{locationError}</p>}
         <h2 style={{ marginTop: '1.5rem' }}>Alert Details</h2>

@@ -8,22 +8,22 @@ router.post('/', auth, async (req, res) => {
     const {
       reporterName,
       reporterPhone,
-      location,
-      address, // New field
+      location, // Optional map coordinates
+      address,   // Required text address
       incidentType,
       description,
       patientCount,
     } = req.body;
 
-    if (!location || !location.lat || !location.lng) {
-        return res.status(400).json({ message: 'Location data is invalid.' });
+    // --- DEPLOYMENT FIX: Make text address required ---
+    if (!address) {
+        return res.status(400).json({ message: 'Address / Location Description is required.' });
     }
 
-    // Combine map coordinates and text address into one location object
     const formattedLocation = {
-        latitude: location.lat,
-        longitude: location.lng,
-        address: address, // Save the text address
+        latitude: location?.lat, // Use optional chaining
+        longitude: location?.lng,
+        address: address,
     };
 
     const userId = req.user && req.user.userId ? req.user.userId : null;

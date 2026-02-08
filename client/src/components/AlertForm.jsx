@@ -17,11 +17,11 @@ const incidentTypes = [
   { value: 'other', label: 'Other' },
 ];
 
-// Add the new optional address field to the schema
+// --- DEPLOYMENT FIX: Make address the required field ---
 const schema = z.object({
   reporterName: z.string().min(1, 'Name is required'),
   reporterPhone: z.string().min(1, 'Phone number is required'),
-  address: z.string().optional(), // New field
+  address: z.string().min(1, 'Address / Location Description is required'), // Now required
   incidentType: z.string().min(1, 'Incident type is required'),
   description: z.string().optional(),
   patientCount: z.number().int().min(1, 'At least one patient is required'),
@@ -50,9 +50,9 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
         {errors.reporterPhone && <p className="error-message">{errors.reporterPhone.message}</p>}
       </div>
 
-      {/* --- NEW ADDRESS FIELD --- */}
       <div className="form-group">
-        <label htmlFor="address">Address / Location Description (Optional)</label>
+        {/* --- DEPLOYMENT FIX: Update label to show it is required --- */}
+        <label htmlFor="address">Address / Location Description</label>
         <textarea id="address" placeholder="e.g., In front of SM City Daet, Vinzons Ave" {...register('address')} />
         {errors.address && <p className="error-message">{errors.address.message}</p>}
       </div>

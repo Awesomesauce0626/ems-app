@@ -1,6 +1,6 @@
 .quick-form-container {
   padding: 2rem;
-  max-width: 1200px; /* Increase max-width for side-by-side layout */
+  max-width: 1200px;
   margin: 2rem auto;
   background-color: #fff;
   border-radius: 8px;
@@ -29,10 +29,24 @@
 }
 
 .map-wrapper {
-  height: 500px; /* Give the map a fixed height */
+  position: relative; /* Needed for the text overlay */
+  height: 500px;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #dee2e6;
+}
+
+.map-optional-text {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #343a40;
+  z-index: 1000; /* Ensure it's above the map */
 }
 
 .form-wrapper {
@@ -43,7 +57,7 @@
   color: #EE3224;
   text-align: center;
   font-weight: 500;
-  margin-top: 1rem; /* Use margin-top instead of margin-bottom */
+  margin-top: 1rem;
   padding: 1rem;
   background-color: rgba(238, 50, 36, 0.1);
   border-radius: 4px;
