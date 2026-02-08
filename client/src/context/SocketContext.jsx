@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
+import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
 
 const SocketContext = createContext(null);
 
@@ -9,13 +10,12 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    // The connection is established only once and reused.
-    const newSocket = io('http://localhost:5000', {
-        transports: ['websocket', 'polling'] // fallback to polling if websocket fails
+    // --- DEPLOYMENT FIX: Use the central API URL for the socket connection ---
+    const newSocket = io(API_BASE_URL, {
+        transports: ['websocket', 'polling']
     });
     setSocket(newSocket);
 
-    // Disconnect socket on cleanup
     return () => newSocket.close();
   }, []);
 
