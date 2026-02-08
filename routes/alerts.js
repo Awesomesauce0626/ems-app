@@ -9,6 +9,7 @@ router.post('/', auth, async (req, res) => {
       reporterName,
       reporterPhone,
       location,
+      address, // New field
       incidentType,
       description,
       patientCount,
@@ -17,9 +18,12 @@ router.post('/', auth, async (req, res) => {
     if (!location || !location.lat || !location.lng) {
         return res.status(400).json({ message: 'Location data is invalid.' });
     }
+
+    // Combine map coordinates and text address into one location object
     const formattedLocation = {
         latitude: location.lat,
         longitude: location.lng,
+        address: address, // Save the text address
     };
 
     const userId = req.user && req.user.userId ? req.user.userId : null;
@@ -86,7 +90,6 @@ router.patch('/:id/status', auth, async (req, res) => {
     const { status, note } = req.body;
     const userRole = req.user.role;
 
-    // --- SUPER-USER FIX: Check if user is authorized to update status ---
     if (userRole !== 'admin' && userRole !== 'ems_personnel') {
         return res.status(403).json({ message: 'You are not authorized to update alert statuses.' });
     }
@@ -97,10 +100,9 @@ router.patch('/:id/status', auth, async (req, res) => {
     }
 
     alert.status = status;
-    alert.statusHistory.push({ status, note, userId: req.user.userId }); // Log which user made the change
+    alert.statusHistory.push({ status, note, userId: req.user.userId });
     alert.updatedAt = new Date();
 
-    // Automatically assign the user to the alert if it's unassigned and they are an EMS or Admin user
     if (!alert.assignedEMS && (userRole === 'ems_personnel' || userRole === 'admin')) {
       alert.assignedEMS = req.user.userId;
     }

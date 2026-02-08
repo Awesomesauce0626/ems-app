@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
+import API_BASE_URL from '../api';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './AlertDetails.css';
@@ -31,7 +31,6 @@ const AlertDetails = () => {
     const fetchAlertDetails = async () => {
         if (!token) return;
       try {
-        // --- DEPLOYMENT FIX: Use the central API URL ---
         const res = await fetch(`${API_BASE_URL}/api/alerts/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -52,7 +51,6 @@ const AlertDetails = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // --- DEPLOYMENT FIX: Use the central API URL ---
       const res = await fetch(`${API_BASE_URL}/api/alerts/${id}/status`, {
         method: 'PATCH',
         headers: {
@@ -92,6 +90,8 @@ const AlertDetails = () => {
         <div className="details-info-panel">
           <h2>Incident Information</h2>
           <p><strong>Type:</strong> {alert.incidentType}</p>
+          {/* --- NEW: Display the text address if it exists --- */}
+          {alert.location?.address && <p><strong>Address:</strong> {alert.location.address}</p>}
           <p><strong>Description:</strong> {alert.description}</p>
           <p><strong>Patients:</strong> {alert.patientCount}</p>
           <hr />

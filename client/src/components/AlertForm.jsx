@@ -7,7 +7,7 @@ const incidentTypes = [
   { value: 'cardiac_arrest', label: 'Cardiac Arrest' },
   { value: 'respiratory_distress', label: 'Respiratory Distress' },
   { value: 'severe_bleeding', label: 'Severe Bleeding' },
-  { value: 'vehicular_accident', label: 'Vehicular Accident' }, // Added
+  { value: 'vehicular_accident', label: 'Vehicular Accident' },
   { value: 'trauma', label: 'Trauma / Injury' },
   { value: 'stroke', label: 'Suspected Stroke' },
   { value: 'allergic_reaction', label: 'Severe Allergic Reaction' },
@@ -17,9 +17,11 @@ const incidentTypes = [
   { value: 'other', label: 'Other' },
 ];
 
+// Add the new optional address field to the schema
 const schema = z.object({
   reporterName: z.string().min(1, 'Name is required'),
   reporterPhone: z.string().min(1, 'Phone number is required'),
+  address: z.string().optional(), // New field
   incidentType: z.string().min(1, 'Incident type is required'),
   description: z.string().optional(),
   patientCount: z.number().int().min(1, 'At least one patient is required'),
@@ -48,6 +50,13 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
         {errors.reporterPhone && <p className="error-message">{errors.reporterPhone.message}</p>}
       </div>
 
+      {/* --- NEW ADDRESS FIELD --- */}
+      <div className="form-group">
+        <label htmlFor="address">Address / Location Description (Optional)</label>
+        <textarea id="address" placeholder="e.g., In front of SM City Daet, Vinzons Ave" {...register('address')} />
+        {errors.address && <p className="error-message">{errors.address.message}</p>}
+      </div>
+
       <div className="form-group">
         <label htmlFor="incidentType">Type of Incident</label>
         <select id="incidentType" {...register('incidentType')}>
@@ -65,7 +74,7 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
       </div>
 
       <div className="form-group">
-        <label htmlFor="description">Description of Incident</label>
+        <label htmlFor="description">Description of Incident (Optional)</label>
         <textarea id="description" placeholder="Provide a brief description of the situation..." {...register('description')} />
         {errors.description && <p className="error-message">{errors.description.message}</p>}
       </div>
