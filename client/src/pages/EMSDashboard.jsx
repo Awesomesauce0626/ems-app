@@ -10,6 +10,7 @@ const EMSDashboard = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMonitoring, setIsMonitoring] = useState(false); // --- ALARM FIX: State to track monitoring status
   const socket = useSocket();
   const { token, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -43,8 +44,9 @@ const EMSDashboard = () => {
     }
   }, [token]);
 
+  // --- ALARM FIX: This effect now only runs when monitoring is active ---
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !isMonitoring) return;
 
     const handleNewAlert = (newAlert) => {
       setAlerts((prevAlerts) => [newAlert, ...prevAlerts]);
@@ -59,7 +61,6 @@ const EMSDashboard = () => {
       );
     };
 
-    // --- ARCHIVE: Handle the real-time archival event ---
     const handleAlertArchived = ({ alertId }) => {
         setAlerts((prevAlerts) => prevAlerts.filter(alert => alert._id !== alertId));
     };
@@ -73,10 +74,17 @@ const EMSDashboard = () => {
       socket.off('alert-status-update', handleAlertUpdate);
       socket.off('alert-archived', handleAlertArchived);
     };
-  }, [socket, alarmSound]);
+  }, [socket, isMonitoring, alarmSound]); // Add isMonitoring to dependency array
 
   const handleAlertClick = (alertId) => {
     navigate(`/alert/${alertId}`);
+  };
+
+  // --- ALARM FIX: Function to handle starting monitoring ---
+  const startMonitoring = () => {
+    // Play a short silent sound to unlock audio playback
+    alarmSound.play().then(() => alarmSound.pause());
+    setIsMonitoring(true);
   };
 
   if (loading) return <div className="dashboard-loading">Loading alerts...</div>;
@@ -98,34 +106,43 @@ const EMSDashboard = () => {
 
       {error && <div className="dashboard-error">Error: {error}</div>}
 
-      <div className="dashboard-content">
-        <div className="alerts-list-panel">
-            <h2 className="panel-header">Incoming Alerts ({alerts.length})</h2>
-            <ul className="alerts-list">
-                {alerts.length > 0 ? alerts.map((alert) => (
-                    <li key={alert._id}
-                        className={`alert-item status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}
-                        onClick={() => handleAlertClick(alert._id)}>
-                        <div className="alert-item-header">
-                            <span className="incident-type">{alert.incidentType}</span>
-                            <span className="status-badge">{alert.status}</span>
-                        </div>
-                        <div className="alert-item-body">
-                            <p><strong>Reporter:</strong> {alert.reporterName}</p>
-                        </div>
-                        <div className="alert-item-footer">
-                            <small>{new Date(alert.createdAt).toLocaleString()}</small>
-                        </div>
-                    </li>
-                )) : (
-                    <div className="no-alerts-message">No active alerts.</div>
-                )}
-            </ul>
+      {/* --- ALARM FIX: Conditional rendering for monitoring button/dashboard content --- */}
+      {!isMonitoring ? (
+        <div className="monitoring-gate">
+            <h2>Ready to Monitor?</h2>
+            <p>Click the button below to start receiving live alerts.</p>
+            <button onClick={startMonitoring} className="start-monitoring-btn">Start Monitoring</button>
         </div>
-        <div className="map-panel">
-          <MapView alerts={alerts} />
+      ) : (
+        <div className="dashboard-content">
+            <div className="alerts-list-panel">
+                <h2 className="panel-header">Incoming Alerts ({alerts.length})</h2>
+                <ul className="alerts-list">
+                    {alerts.length > 0 ? alerts.map((alert) => (
+                        <li key={alert._id}
+                            className={`alert-item status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}
+                            onClick={() => handleAlertClick(alert._id)}>
+                            <div className="alert-item-header">
+                                <span className="incident-type">{alert.incidentType}</span>
+                                <span className="status-badge">{alert.status}</span>
+                            </div>
+                            <div className="alert-item-body">
+                                <p><strong>Reporter:</strong> {alert.reporterName}</p>
+                            </div>
+                            <div className="alert-item-footer">
+                                <small>{new Date(alert.createdAt).toLocaleString()}</small>
+                            </div>
+                        </li>
+                    )) : (
+                        <div className="no-alerts-message">No active alerts. Waiting for new alerts...</div>
+                    )}
+                </ul>
+            </div>
+            <div className="map-panel">
+            <MapView alerts={alerts} />
+            </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

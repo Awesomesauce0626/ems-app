@@ -47,6 +47,44 @@
   font-family: inherit;
 }
 
+/* --- ALARM FIX: Styles for the monitoring gate --- */
+.monitoring-gate {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    text-align: center;
+    padding: 2rem;
+}
+
+.monitoring-gate h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.monitoring-gate p {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+}
+
+.start-monitoring-btn {
+    background-color: #EE3224;
+    color: white;
+    padding: 1rem 2.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.start-monitoring-btn:hover {
+    background-color: #d62112;
+}
+/* --- End Alarm Fix --- */
 
 .dashboard-content {
   display: flex;
@@ -124,10 +162,10 @@
 }
 
 /* Status-specific colors */
-.alert-item.status-pending {
+.alert-item.status-new, .alert-item.status-pending {
   border-left-color: #ffc107;
 }
-.alert-item.status-pending .status-badge {
+.alert-item.status-new .status-badge, .alert-item.status-pending .status-badge {
   background-color: #ffc107;
   color: #212529;
 }
