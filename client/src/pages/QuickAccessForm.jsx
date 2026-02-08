@@ -8,9 +8,10 @@ import './QuickAccessForm.css';
 const QuickAccessForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [location, setLocation] = useState(null); // Optional map location
+  const [location, setLocation] = useState(null);
   const [initialCenter, setInitialCenter] = useState([14.113, 122.95]);
   const [locationError, setLocationError] = useState(null);
+  const [isSuccess, setIsSuccess] = useState(false); // --- UX FIX: State for success screen
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -52,7 +53,6 @@ const QuickAccessForm = () => {
       if (!quickAccessRes.ok) throw new Error('Failed to get quick access token');
       const { token } = await quickAccessRes.json();
 
-      // Map coordinates are now optional
       const alertData = { ...data, location };
 
       const alertRes = await fetch(`${API_BASE_URL}/api/alerts`, {
@@ -66,7 +66,7 @@ const QuickAccessForm = () => {
 
       if (!alertRes.ok) throw new Error('Failed to submit alert');
 
-      alert('Alert submitted successfully! EMS is on the way.');
+      setIsSuccess(true); // --- UX FIX: Show success screen
 
     } catch (err) {
       setError(err.message || 'An unexpected error occurred.');
@@ -74,6 +74,20 @@ const QuickAccessForm = () => {
       setIsSubmitting(false);
     }
   };
+
+  // --- UX FIX: Render success screen ---
+  if (isSuccess) {
+    return (
+      <div className="quick-form-container">
+          <div className="success-message-container">
+              <h2>Alert Submitted Successfully!</h2>
+              <p>Thank you for your report. The EMS team has been notified.</p>
+              <p><strong>Please keep your phone line open. An EMS dispatcher may call you for confirmation or additional details.</strong></p>
+              <button onClick={() => window.location.reload()} className="submit-another-btn">Submit Another Report</button>
+          </div>
+      </div>
+    )
+  }
 
   return (
     <div className="quick-form-container">

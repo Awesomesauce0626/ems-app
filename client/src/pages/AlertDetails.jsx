@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // --- UX FIX: Import useNavigate
 import { useAuth } from '../context/AuthContext';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import API_BASE_URL from '../api';
@@ -7,7 +7,6 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './AlertDetails.css';
 
-// Fix for Vite with Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png',
@@ -15,7 +14,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png',
 });
 
-// --- DEPLOYMENT FIX: Use value/label pairs for status options ---
 const statusOptions = [
   { value: 'new', label: 'New' },
   { value: 'responding', label: 'Responding' },
@@ -28,18 +26,17 @@ const statusOptions = [
 const AlertDetails = () => {
   const { id } = useParams();
   const { token, user } = useAuth();
+  const navigate = useNavigate(); // --- UX FIX: Initialize navigate hook
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // For the update form
   const [status, setStatus] = useState('');
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchAlertDetails = async () => {
-        if (!token) return;
+      if (!token) return;
       try {
         const res = await fetch(`${API_BASE_URL}/api/alerts/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -71,8 +68,15 @@ const AlertDetails = () => {
       });
       if (!res.ok) throw new Error('Failed to update status');
       const updatedAlert = await res.json();
-      setAlert(updatedAlert.alert);
-      setNote('');
+
+      // Check if alert was archived
+      if (updatedAlert.message.includes('archived')) {
+        alert('Alert completed and archived. Returning to dashboard.');
+        navigate('/dashboard/ems'); // Navigate away after archival
+      } else {
+        setAlert(updatedAlert.alert);
+        setNote('');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -85,14 +89,14 @@ const AlertDetails = () => {
   if (!alert) return <div>Alert not found.</div>;
 
   const canUpdateStatus = user?.role === 'ems_personnel' || user?.role === 'admin';
-
-  // Find the label for the current status to display it correctly
   const currentStatusLabel = statusOptions.find(opt => opt.value === alert.status)?.label || alert.status;
 
   return (
     <div className="alert-details-container">
       <header className="details-header">
         <h1>Alert Details</h1>
+        {/* --- UX FIX: Add back button --- */}
+        <button onClick={() => navigate(-1)} className="back-button">← Back to Dashboard</button>
         <span className={`status-badge-lg status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}>
           {currentStatusLabel}
         </span>
