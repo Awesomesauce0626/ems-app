@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // --- UX FIX: Import useNavigate
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import API_BASE_URL from '../api';
@@ -26,7 +26,7 @@ const statusOptions = [
 const AlertDetails = () => {
   const { id } = useParams();
   const { token, user } = useAuth();
-  const navigate = useNavigate(); // --- UX FIX: Initialize navigate hook
+  const navigate = useNavigate();
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,6 +57,7 @@ const AlertDetails = () => {
   const handleStatusUpdate = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null); // Clear previous errors
     try {
       const res = await fetch(`${API_BASE_URL}/api/alerts/${id}/status`, {
         method: 'PATCH',
@@ -66,17 +67,27 @@ const AlertDetails = () => {
         },
         body: JSON.stringify({ status, note }),
       });
-      if (!res.ok) throw new Error('Failed to update status');
-      const updatedAlert = await res.json();
 
-      // Check if alert was archived
-      if (updatedAlert.message.includes('archived')) {
-        alert('Alert completed and archived. Returning to dashboard.');
-        navigate('/dashboard/ems'); // Navigate away after archival
-      } else {
-        setAlert(updatedAlert.alert);
-        setNote('');
+      if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Failed to update status');
       }
+
+      const updatedAlertData = await res.json();
+
+      // --- BUG FIX: Check for archival message first ---
+      if (updatedAlertData.message && updatedAlertData.message.includes('archived')) {
+        alert('Alert completed and archived. Returning to dashboard.');
+        navigate('/dashboard/ems');
+      } else if (updatedAlertData.alert) {
+        // --- BUG FIX: Only update state if a valid alert object is returned ---
+        setAlert(updatedAlertData.alert);
+        setNote('');
+      } else {
+        // Handle unexpected responses without crashing
+        throw new Error('Received an unexpected response from the server.');
+      }
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -95,7 +106,6 @@ const AlertDetails = () => {
     <div className="alert-details-container">
       <header className="details-header">
         <h1>Alert Details</h1>
-        {/* --- UX FIX: Add back button --- */}
         <button onClick={() => navigate(-1)} className="back-button">← Back to Dashboard</button>
         <span className={`status-badge-lg status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}>
           {currentStatusLabel}

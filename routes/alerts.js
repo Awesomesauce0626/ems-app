@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Alert = require('../models/Alert');
-const User = require('../models/User'); // --- PUSH NOTIFICATIONS: Import User model
+const User = require('../models/User');
 const CompletedAlert = require('../models/CompletedAlert');
 const auth = require('../middleware/auth');
-const admin = require('firebase-admin'); // --- PUSH NOTIFICATIONS: Import Firebase Admin
+const admin = require('firebase-admin');
 
 router.post('/', auth, async (req, res) => {
   try {
@@ -48,7 +48,6 @@ router.post('/', auth, async (req, res) => {
 
     req.io.emit('new-alert', populatedAlert);
 
-    // --- PUSH NOTIFICATIONS: Send notifications to all relevant staff ---
     const staffUsers = await User.find({ role: { $in: ['ems_personnel', 'admin'] } });
     const tokens = staffUsers.flatMap(user => user.fcmTokens);
 
@@ -86,6 +85,19 @@ router.get('/completed', auth, async (req, res) => {
             .populate('assignedEMS', 'email firstName lastName phoneNumber')
             .sort({ archivedAt: -1 });
         res.json(completedAlerts);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// --- ENHANCEMENT: New endpoint to delete an archived alert ---
+router.delete('/completed/:id', auth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden: Only admins can delete archived alerts.' });
+    }
+    try {
+        await CompletedAlert.findByIdAndDelete(req.params.id);
+        res.status(200).json({ message: 'Archived alert deleted successfully.' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
