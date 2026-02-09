@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import usePushNotifications from '../hooks/usePushNotifications';
+import useLocationTracking from '../hooks/useLocationTracking'; // --- LIVE TRACKING: Import the hook
 import MapView from '../components/MapView';
 import API_BASE_URL from '../api';
 import './EMSDashboard.css';
 
 const EMSDashboard = () => {
   const [alerts, setAlerts] = useState([]);
+  const [responderLocations, setResponderLocations] = useState([]); // --- LIVE TRACKING: State for responder locations
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -17,6 +19,7 @@ const EMSDashboard = () => {
   const navigate = useNavigate();
 
   const { requestPermissionAndGetToken, notificationStatus } = usePushNotifications(token);
+  const { isTracking, startTracking, stopTracking } = useLocationTracking(user); // --- LIVE TRACKING: Initialize the hook
 
   const alarmSound = useMemo(() => new Audio('/alarm.mp3'), []);
 
@@ -67,14 +70,21 @@ const EMSDashboard = () => {
         setAlerts((prevAlerts) => prevAlerts.filter(alert => alert._id !== alertId));
     };
 
+    // --- LIVE TRACKING: Listen for responder location updates ---
+    const handleLocationsBroadcast = (locations) => {
+        setResponderLocations(locations);
+    };
+
     socket.on('new-alert', handleNewAlert);
     socket.on('alert-status-update', handleAlertUpdate);
     socket.on('alert-archived', handleAlertArchived);
+    socket.on('ems-locations-broadcast', handleLocationsBroadcast);
 
     return () => {
       socket.off('new-alert', handleNewAlert);
       socket.off('alert-status-update', handleAlertUpdate);
       socket.off('alert-archived', handleAlertArchived);
+      socket.off('ems-locations-broadcast', handleLocationsBroadcast);
     };
   }, [socket, isMonitoring, alarmSound]);
 
@@ -92,12 +102,19 @@ const EMSDashboard = () => {
   return (
     <div className="ems-dashboard">
       <header className="dashboard-header">
-        {/* --- UX ENHANCEMENT: Universal Home Button --- */}
         <Link to="/" className="header-logo-link">
             <img src="/prc-logo.png" alt="PRC Logo" />
             <span>EMS Control Tower</span>
         </Link>
         <nav className="dashboard-nav">
+            {/* --- LIVE TRACKING: On Duty Toggle --- */}
+            <div className="on-duty-toggle">
+                <label htmlFor="duty-switch">On Duty</label>
+                <label className="switch">
+                    <input id="duty-switch" type="checkbox" checked={isTracking} onChange={() => isTracking ? stopTracking() : startTracking()} />
+                    <span className="slider round"></span>
+                </label>
+            </div>
             {user?.role === 'admin' && (
                 <Link to="/dashboard/admin" className="nav-link admin-link">Return to Admin</Link>
             )}
@@ -147,7 +164,8 @@ const EMSDashboard = () => {
                 </ul>
             </div>
             <div className="map-panel">
-            <MapView alerts={alerts} />
+              {/* --- LIVE TRACKING: Pass responder locations to the map --- */}
+              <MapView alerts={alerts} responders={responderLocations} />
             </div>
         </div>
       )}

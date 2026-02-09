@@ -9,15 +9,12 @@ require('dotenv').config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// --- PUSH NOTIFICATIONS: Definitive fix for production credentials ---
 if (isProduction) {
-  // In production (on Render), parse the credentials from the environment variable
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
 } else {
-  // In local development, use the file
   const serviceAccount = require('./firebase-service-account-key.json');
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
@@ -31,7 +28,6 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const httpServer = http.createServer(app);
 
-// --- Configuration ---
 const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
 
 const corsOptions = {
@@ -41,7 +37,6 @@ const corsOptions = {
 
 const io = new Server(httpServer, { cors: corsOptions });
 
-// --- Middleware ---
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use((req, res, next) => {
@@ -49,7 +44,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- API Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/admin', adminRoutes);
@@ -57,7 +51,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend is running' });
 });
 
-// --- Frontend & Catch-all Route ---
 if (isProduction) {
   app.use(express.static(path.join(__dirname, 'client/dist')));
   app.get('*', (req, res) => {
@@ -65,15 +58,27 @@ if (isProduction) {
   });
 }
 
-// --- WebSocket Events ---
+// --- LIVE TRACKING: In-memory storage for responder locations ---
+const responderLocations = new Map();
+
 io.on('connection', (socket) => {
   console.log('a user connected:', socket.id);
+
+  // --- LIVE TRACKING: Listen for location updates from EMS personnel ---
+  socket.on('ems-location-update', (data) => {
+    responderLocations.set(socket.id, { ...data, id: socket.id });
+    // Broadcast the updated locations to all clients
+    io.emit('ems-locations-broadcast', Array.from(responderLocations.values()));
+  });
+
   socket.on('disconnect', () => {
     console.log('user disconnected:', socket.id);
+    // --- LIVE TRACKING: Remove disconnected user from the map ---
+    responderLocations.delete(socket.id);
+    io.emit('ems-locations-broadcast', Array.from(responderLocations.values()));
   });
 });
 
-// --- Start Server Logic ---
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 

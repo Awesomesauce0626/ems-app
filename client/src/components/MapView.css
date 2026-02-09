@@ -7,3 +7,9 @@
         opacity: 0.2;
     }
 }
+
+/* --- LIVE TRACKING: Style for the responder markers --- */
+.responder-marker {
+    /* This uses a CSS filter to change the marker's color to blue. */
+    filter: hue-rotate(180deg) saturate(3);
+}
