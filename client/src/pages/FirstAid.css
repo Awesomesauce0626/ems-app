@@ -2,21 +2,35 @@
     max-width: 800px;
     margin: 2rem auto;
     padding: 2rem;
-    background-color: #fff;
-    border-radius: 8px;
 }
 
-.first-aid-header {
+/* --- UX ENHANCEMENT: Universal Header Styles --- */
+.universal-header {
+    padding: 1rem 2rem;
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.header-logo-link {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid #e9ecef;
-    padding-bottom: 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    gap: 0.75rem;
 }
 
-.first-aid-header h1 {
-    margin: 0;
+.header-logo-link img {
+    height: 40px;
+}
+
+.header-logo-link span {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #343a40;
 }
 
 .first-aid-menu {
@@ -72,7 +86,6 @@
 .steps-list {
     list-style: none;
     padding: 0;
-    counter-reset: step-counter;
 }
 
 .step-item {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import API_BASE_URL from '../api';
@@ -57,7 +57,7 @@ const AlertDetails = () => {
   const handleStatusUpdate = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError(null); // Clear previous errors
+    setError(null);
     try {
       const res = await fetch(`${API_BASE_URL}/api/alerts/${id}/status`, {
         method: 'PATCH',
@@ -75,16 +75,13 @@ const AlertDetails = () => {
 
       const updatedAlertData = await res.json();
 
-      // --- BUG FIX: Check for archival message first ---
       if (updatedAlertData.message && updatedAlertData.message.includes('archived')) {
         alert('Alert completed and archived. Returning to dashboard.');
         navigate('/dashboard/ems');
       } else if (updatedAlertData.alert) {
-        // --- BUG FIX: Only update state if a valid alert object is returned ---
         setAlert(updatedAlertData.alert);
         setNote('');
       } else {
-        // Handle unexpected responses without crashing
         throw new Error('Received an unexpected response from the server.');
       }
 
@@ -104,74 +101,75 @@ const AlertDetails = () => {
 
   return (
     <div className="alert-details-container">
-      <header className="details-header">
-        <h1>Alert Details</h1>
-        <button onClick={() => navigate(-1)} className="back-button">← Back to Dashboard</button>
-        <span className={`status-badge-lg status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}>
-          {currentStatusLabel}
-        </span>
+      <header className="universal-header">
+          <Link to="/" className="header-logo-link">
+              <img src="/prc-logo.png" alt="PRC Logo" />
+              <span>Alert Details</span>
+          </Link>
+          <button onClick={() => navigate(-1)} className="back-button">← Back</button>
       </header>
 
       <div className="details-content-grid">
-        <div className="details-info-panel">
-          <h2>Incident Information</h2>
-          <p><strong>Type:</strong> {alert.incidentType}</p>
-          {alert.location?.address && <p><strong>Address:</strong> {alert.location.address}</p>}
-          <p><strong>Description:</strong> {alert.description}</p>
-          <p><strong>Patients:</strong> {alert.patientCount}</p>
-          <hr />
-          <h2>Reporter Details</h2>
-          <p><strong>Name:</strong> {alert.reporterName}</p>
-          <p><strong>Phone:</strong> {alert.reporterPhone}</p>
-          {alert.userId && <p><strong>Account:</strong> Registered User ({alert.userId.email})</p>}
-          <hr />
-          <h2>Timeline</h2>
-          <ul className="status-history">
-            {alert.statusHistory.map((entry, index) => {
-                const entryStatusLabel = statusOptions.find(opt => opt.value === entry.status)?.label || entry.status;
-                return (
-                    <li key={index}>
-                        <strong>{entryStatusLabel}</strong> - <small>{new Date(entry.timestamp).toLocaleString()}</small>
-                        {entry.note && <p className="note">Note: {entry.note}</p>}
-                    </li>
-                )
-            })}
-          </ul>
-        </div>
+          <div className="details-info-panel">
+            <h2>Incident Information</h2>
+            <p><strong>Status:</strong> <span className={`status-badge-lg status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}>{currentStatusLabel}</span></p>
+            <p><strong>Type:</strong> {alert.incidentType}</p>
+            {alert.location?.address && <p><strong>Address:</strong> {alert.location.address}</p>}
+            <p><strong>Description:</strong> {alert.description}</p>
+            <p><strong>Patients:</strong> {alert.patientCount}</p>
+            <hr />
+            <h2>Reporter Details</h2>
+            <p><strong>Name:</strong> {alert.reporterName}</p>
+            <p><strong>Phone:</strong> {alert.reporterPhone}</p>
+            {alert.userId && <p><strong>Account:</strong> Registered User ({alert.userId.email})</p>}
+            <hr />
+            <h2>Timeline</h2>
+            <ul className="status-history">
+                {alert.statusHistory.map((entry, index) => {
+                    const entryStatusLabel = statusOptions.find(opt => opt.value === entry.status)?.label || entry.status;
+                    return (
+                        <li key={index}>
+                            <strong>{entryStatusLabel}</strong> - <small>{new Date(entry.timestamp).toLocaleString()}</small>
+                            {entry.note && <p className="note">Note: {entry.note}</p>}
+                        </li>
+                    )
+                })}
+            </ul>
+          </div>
 
-        <div className="details-action-panel">
-            {alert.location && alert.location.latitude && alert.location.longitude && (
-                <div className="details-map-container">
-                    <MapContainer center={[alert.location.latitude, alert.location.longitude]} zoom={15} style={{ height: '300px', width: '100%' }}>
-                        <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-                        <Marker position={[alert.location.latitude, alert.location.longitude]}>
-                            <Popup>{alert.incidentType}</Popup>
-                        </Marker>
-                    </MapContainer>
-                </div>
+          <div className="details-action-panel">
+              {alert.location && alert.location.latitude && alert.location.longitude && (
+                  <div className="details-map-container">
+                      <MapContainer center={[alert.location.latitude, alert.location.longitude]} zoom={15} style={{ height: '300px', width: '100%' }}>
+                          <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                          <Marker position={[alert.location.latitude, alert.location.longitude]}>
+                              <Popup>{alert.incidentType}</Popup>
+                          </Marker>
+                      </MapContainer>
+                  </div>
+              )}
+
+            {canUpdateStatus && (
+              <div className="status-update-form">
+                <h3>Update Status</h3>
+                <form onSubmit={handleStatusUpdate}>
+                  <div className="form-group">
+                    <label>New Status</label>
+                    <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                      {statusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Notes</label>
+                    <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add relevant notes..."></textarea>
+                  </div>
+                  <button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Updating...' : 'Update Alert'}
+                  </button>
+                </form>
+              </div>
             )}
-
-          {canUpdateStatus && (
-            <div className="status-update-form">
-              <h3>Update Status</h3>
-              <form onSubmit={handleStatusUpdate}>
-                <div className="form-group">
-                  <label>New Status</label>
-                  <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                    {statusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Notes</label>
-                  <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add relevant notes..."></textarea>
-                </div>
-                <button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Updating...' : 'Update Alert'}
-                </button>
-              </form>
-            </div>
-          )}
-        </div>
+          </div>
       </div>
     </div>
   );

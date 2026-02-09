@@ -1,16 +1,17 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { firstAidTopics } from '../data/firstAidGuide';
 import './FirstAid.css';
 
 const FirstAidMenu = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="first-aid-container">
-      <header className="first-aid-header">
-        <button onClick={() => navigate(-1)} className="back-button">← Back</button>
-        <h1>First-Aid Guide</h1>
+      {/* --- UX ENHANCEMENT: Universal Home Button --- */}
+      <header className="universal-header">
+        <Link to="/" className="header-logo-link">
+            <img src="/prc-logo.png" alt="PRC Logo" />
+            <span>First-Aid Guide</span>
+        </Link>
       </header>
       <div className="first-aid-menu">
         {firstAidTopics.map(topic => (

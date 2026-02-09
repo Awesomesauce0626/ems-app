@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { firstAidTopics } from '../data/firstAidGuide';
 import './FirstAid.css';
 
@@ -11,9 +11,11 @@ const FirstAidTopic = () => {
   if (!topic) {
     return (
       <div className="first-aid-container">
-        <header className="first-aid-header">
-            <button onClick={() => navigate(-1)} className="back-button">← Back</button>
-            <h1>Topic Not Found</h1>
+        <header className="universal-header">
+          <Link to="/" className="header-logo-link">
+              <img src="/prc-logo.png" alt="PRC Logo" />
+              <span>First-Aid Guide</span>
+          </Link>
         </header>
         <p className="not-found-message">The requested first-aid topic could not be found.</p>
       </div>
@@ -22,9 +24,12 @@ const FirstAidTopic = () => {
 
   return (
     <div className="first-aid-container">
-      <header className="first-aid-header">
+      <header className="universal-header">
+        <Link to="/" className="header-logo-link">
+            <img src="/prc-logo.png" alt="PRC Logo" />
+            <span>{topic.title}</span>
+        </Link>
         <button onClick={() => navigate('/first-aid')} className="back-button">← Back to Guide</button>
-        <h1>{topic.icon} {topic.title}</h1>
       </header>
       <div className="steps-container">
         <div className="disclaimer">
