@@ -9,24 +9,35 @@ const usePushNotifications = (token) => {
   const [notificationStatus, setNotificationStatus] = useState('default');
 
   useEffect(() => {
-    // --- PLATFORM FIX: Add a more robust check for Notification API support ---
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.Notification) {
-      if (Notification.permission !== 'granted') {
-        setNotificationStatus(Notification.permission);
-      }
+    // --- MOBILE FIX: Add more robust check for Notification API support ---
+    if (
+      typeof window !== 'undefined' &&
+      'serviceWorker' in navigator &&
+      window.Notification
+    ) {
+      setNotificationStatus(Notification.permission);
     }
   }, []);
 
   const requestPermissionAndGetToken = async () => {
+    if (!('Notification' in window)) {
+      console.error('This browser does not support desktop notification');
+      alert('This browser does not support desktop notification');
+      return;
+    }
+
     try {
       const permission = await Notification.requestPermission();
       setNotificationStatus(permission);
 
       if (permission === 'granted') {
-        const vapidKey = "BLcbvR8NhergoDnenCdDvLYaUjAwGAH7K8fjWRnldVFmn-FfZD-oxcEexoGzr8AWD6g1wh5n0DGtZ9k0NFurSKU";
+        console.log('Notification permission granted.');
+        // TODO: Get the VAPID key from Firebase Console.
+        const vapidKey = "YOUR_VAPID_KEY_HERE";
         const fcmToken = await getToken(messaging, { vapidKey });
 
         if (fcmToken) {
+          console.log('FCM Token:', fcmToken);
           await sendTokenToServer(fcmToken);
         } else {
           console.log('No registration token available. Request permission to generate one.');
@@ -49,6 +60,7 @@ const usePushNotifications = (token) => {
         },
         body: JSON.stringify({ token: fcmToken }),
       });
+      console.log('FCM token sent to server successfully.');
     } catch (error) {
       console.error('Error sending FCM token to server:', error);
     }
