@@ -99,6 +99,8 @@ const CitizenDashboard = () => {
         <div className="cd-actions">
           <h2>Dashboard</h2>
           <button onClick={openAlertModal} className="new-alert-button">Create New Alert</button>
+          {/* --- ENHANCEMENT: Add First-Aid Guide Button --- */}
+          <Link to="/first-aid" className="first-aid-button">View First-Aid Guide</Link>
         </div>
 
         <div className="alert-history">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // --- ENHANCEMENT: Import Link
 import SOSButton from '../components/SOSButton';
 import './LandingPage.css';
 
@@ -24,8 +24,10 @@ function LandingPage() {
         <SOSButton onClick={handleSOSClick} />
       </main>
       <footer className="landing-footer">
-        <p>Already have an account? <a href="/login">Login</a></p>
-        <p>or <a href="/register">Register</a> for a better experience.</p>
+        {/* --- ENHANCEMENT: Add link to First-Aid Guide --- */}
+        <p><Link to="/first-aid" className="footer-link">View First-Aid Guide</Link></p>
+        <p>Already have an account? <Link to="/login" className="footer-link">Login</Link></p>
+        <p>or <Link to="/register" className="footer-link">Register</Link> for a better experience.</p>
       </footer>
     </div>
   );

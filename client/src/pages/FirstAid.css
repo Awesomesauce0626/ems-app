@@ -1,0 +1,122 @@
+.first-aid-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+}
+
+.first-aid-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1.5rem;
+}
+
+.first-aid-header h1 {
+    margin: 0;
+}
+
+.first-aid-menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.menu-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #343a40;
+    transition: all 0.2s ease;
+}
+
+.menu-item:hover {
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+    transform: translateY(-5px);
+}
+
+.menu-item-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.menu-item-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.steps-container {
+    padding: 1rem 0;
+}
+
+.disclaimer {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.steps-list {
+    list-style: none;
+    padding: 0;
+    counter-reset: step-counter;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #EE3224;
+    color: white;
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-right: 1.5rem;
+}
+
+.step-instruction {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.not-found-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.back-button {
+    background: none;
+    border: 1px solid #ced4da;
+    color: #495057;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.back-button:hover {
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+}

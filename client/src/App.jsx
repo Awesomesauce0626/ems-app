@@ -10,9 +10,12 @@ import EMSDashboard from './pages/EMSDashboard';
 import AlertDetails from './pages/AlertDetails';
 import QuickAccessForm from './pages/QuickAccessForm';
 import ReportsPage from './pages/ReportsPage';
-import AdminDashboard from './pages/AdminDashboard'; // --- ADMIN: Import the new dashboard
+import AdminDashboard from './pages/AdminDashboard';
 import AuthCallbackHandler from './pages/AuthCallbackHandler';
 import ProtectedRoute from './components/ProtectedRoute';
+// --- ENHANCEMENT: Import First-Aid Guide pages ---
+import FirstAidMenu from './pages/FirstAidMenu';
+import FirstAidTopic from './pages/FirstAidTopic';
 
 function App() {
   return (
@@ -22,6 +25,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/quick-access" element={<QuickAccessForm />} />
+
+        {/* --- ENHANCEMENT: Add routes for the First-Aid Guide --- */}
+        <Route path="/first-aid" element={<FirstAidMenu />} />
+        <Route path="/first-aid/:topicId" element={<FirstAidTopic />} />
 
         <Route path="/auth/callback" element={<AuthCallbackHandler />} />
 
@@ -61,7 +68,7 @@ function App() {
         <Route
           path="/reports"
           element={
-            <ProtectedRoute role="ems_personnel">
+            <ProtectedRoute role={['admin', 'ems_personnel']}> {/* Allow both roles */}
               <ReportsPage />
             </ProtectedRoute>
           }
