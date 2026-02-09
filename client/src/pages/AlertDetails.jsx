@@ -57,7 +57,7 @@ const AlertDetails = () => {
   const handleStatusUpdate = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError(null);
+    setError(null); // Clear previous errors
     try {
       const res = await fetch(`${API_BASE_URL}/api/alerts/${id}/status`, {
         method: 'PATCH',
@@ -75,14 +75,17 @@ const AlertDetails = () => {
 
       const updatedAlertData = await res.json();
 
+      // --- DEFINITIVE BUG FIX: Check for archival message first ---
       if (updatedAlertData.message && updatedAlertData.message.includes('archived')) {
         alert('Alert completed and archived. Returning to dashboard.');
-        navigate('/dashboard/ems');
+        navigate('/dashboard/ems'); // Navigate away immediately
       } else if (updatedAlertData.alert) {
+        // --- Only update state if a valid alert object is returned ---
         setAlert(updatedAlertData.alert);
         setNote('');
       } else {
-        throw new Error('Received an unexpected response from the server.');
+        // This case handles any other unexpected server response without crashing.
+        throw new Error('An unexpected response was received from the server.');
       }
 
     } catch (err) {
