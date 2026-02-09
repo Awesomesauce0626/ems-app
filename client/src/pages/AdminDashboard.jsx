@@ -8,7 +8,7 @@ const AdminDashboard = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { token, logout } = useAuth();
+    const { token, user: adminUser, logout } = useAuth(); // Get the logged-in admin's user object
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -44,12 +44,36 @@ const AdminDashboard = () => {
         }
     };
 
+    // --- NEW FEATURE: Handle user deletion ---
+    const handleDeleteUser = async (userId) => {
+        if (!window.confirm('Are you sure you want to permanently delete this user?')) {
+            return;
+        }
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            const resData = await res.json();
+            if (!res.ok) {
+                throw new Error(resData.message || 'Failed to delete user.');
+            }
+
+            // Remove user from the list to update UI
+            setUsers(users.filter(user => user._id !== userId));
+            alert(resData.message);
+
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
     if (loading) return <div className="admin-loading">Loading users...</div>;
 
     return (
         <div className="admin-dashboard-container">
             <header className="admin-header">
-                {/* --- UX ENHANCEMENT: Universal Home Button --- */}
                 <Link to="/" className="header-logo-link">
                     <img src="/prc-logo.png" alt="PRC Logo" />
                     <span>Admin Dashboard</span>
@@ -80,7 +104,7 @@ const AdminDashboard = () => {
                                 <td>{user.firstName} {user.lastName}</td>
                                 <td>{user.email}</td>
                                 <td>{user.role}</td>
-                                <td>
+                                <td className="action-cell">
                                     <select
                                         defaultValue={user.role}
                                         onChange={(e) => handleRoleChange(user._id, e.target.value)}
@@ -91,6 +115,14 @@ const AdminDashboard = () => {
                                         <option value="ems_personnel">EMS Personnel</option>
                                         <option value="admin">Admin</option>
                                     </select>
+                                    {/* --- NEW FEATURE: Delete Button --- */}
+                                    <button
+                                        onClick={() => handleDeleteUser(user._id)}
+                                        className="delete-user-btn"
+                                        disabled={user._id === adminUser.id || user.email === 'i.am.sam052408@gmail.com'} // Disable for self and super admin
+                                    >
+                                        Delete
+                                    </button>
                                 </td>
                             </tr>
                         ))}

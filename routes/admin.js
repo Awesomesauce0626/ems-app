@@ -30,7 +30,6 @@ router.patch('/users/:id/role', [auth, adminAuth], async (req, res) => {
     try {
         const { role } = req.body;
 
-        // Basic validation
         if (!['citizen', 'ems_personnel', 'admin'].includes(role)) {
             return res.status(400).json({ message: 'Invalid role specified' });
         }
@@ -46,6 +45,32 @@ router.patch('/users/:id/role', [auth, adminAuth], async (req, res) => {
         res.json({ message: `User role updated to ${role}` });
 
     } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// --- NEW FEATURE: Delete a user ---
+// @route   DELETE /api/admin/users/:id
+// @desc    Delete a user
+// @access  Admin
+router.delete('/users/:id', [auth, adminAuth], async (req, res) => {
+    try {
+        // Prevent an admin from deleting their own account
+        if (req.user.userId === req.params.id) {
+            return res.status(400).json({ message: 'You cannot delete your own account.' });
+        }
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        await user.deleteOne(); // Use deleteOne() on the document
+
+        res.json({ message: 'User deleted successfully.' });
+
+    } catch (error) {
+        console.error("User Deletion Error:", error);
         res.status(500).json({ message: 'Server error' });
     }
 });
