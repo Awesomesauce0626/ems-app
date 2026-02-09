@@ -52,10 +52,16 @@ router.post('/', auth, async (req, res) => {
     const tokens = staffUsers.flatMap(user => user.fcmTokens);
 
     if (tokens.length > 0) {
+        // --- FINAL ENHANCEMENT: Add a 'data' payload to ensure the service is always woken up ---
         const message = {
             notification: {
                 title: 'New Emergency Alert!',
                 body: `Incident: ${incidentType} at ${address}`,
+            },
+            data: {
+                title: 'New Emergency Alert!',
+                body: `Incident: ${incidentType} at ${address}`,
+                sound: 'alarm' // Custom data to identify the sound
             },
             tokens: tokens,
         };
@@ -90,7 +96,6 @@ router.get('/completed', auth, async (req, res) => {
     }
 });
 
-// --- ENHANCEMENT: New endpoint to delete an archived alert ---
 router.delete('/completed/:id', auth, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Forbidden: Only admins can delete archived alerts.' });

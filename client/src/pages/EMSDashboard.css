@@ -47,7 +47,6 @@
   font-family: inherit;
 }
 
-/* --- ALARM FIX: Styles for the monitoring gate --- */
 .monitoring-gate {
     display: flex;
     flex-direction: column;
@@ -84,7 +83,6 @@
 .start-monitoring-btn:hover {
     background-color: #d62112;
 }
-/* --- End Alarm Fix --- */
 
 .dashboard-content {
   display: flex;
@@ -127,7 +125,7 @@
 .alert-item {
   background-color: #fff;
   border: 1px solid #e9ecef;
-  border-left: 5px solid #6c757d; /* Default color */
+  border-left: 5px solid #6c757d;
   border-radius: 4px;
   padding: 1rem;
   transition: box-shadow 0.2s ease, background-color 0.2s ease;
@@ -161,7 +159,6 @@
   background-color: #6c757d;
 }
 
-/* Status-specific colors */
 .alert-item.status-new, .alert-item.status-pending {
   border-left-color: #ffc107;
 }
@@ -219,4 +216,33 @@
     height: 100%;
     font-size: 1.2rem;
     color: #6c757d;
+}
+
+/* --- RESPONSIVENESS FIX: For mobile and tablet screens --- */
+@media (max-width: 992px) {
+    .dashboard-content {
+        flex-direction: column; /* Stack the list and map vertically */
+    }
+
+    .alerts-list-panel {
+        width: 100%; /* Take full width */
+        height: 50%; /* Take half the screen height */
+        border-right: none; /* Remove the side border */
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .map-panel {
+        height: 50%; /* Take the other half of the screen height */
+    }
+
+    .dashboard-header {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .header-content h1 {
+        font-size: 1.3rem;
+    }
 }
