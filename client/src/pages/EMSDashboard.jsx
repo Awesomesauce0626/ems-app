@@ -3,26 +3,27 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import usePushNotifications from '../hooks/usePushNotifications';
-import useLocationTracking from '../hooks/useLocationTracking'; // --- LIVE TRACKING: Import the hook
+import useLocationTracking from '../hooks/useLocationTracking';
 import MapView from '../components/MapView';
 import API_BASE_URL from '../api';
 import './EMSDashboard.css';
 
 const EMSDashboard = () => {
   const [alerts, setAlerts] = useState([]);
-  const [responderLocations, setResponderLocations] = useState([]); // --- LIVE TRACKING: State for responder locations
+  const [responderLocations, setResponderLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isMonitoring, setIsMonitoring] = useState(false);
   const socket = useSocket();
   const { token, user, logout } = useAuth();
   const navigate = useNavigate();
 
   const { requestPermissionAndGetToken, notificationStatus } = usePushNotifications(token);
-  const { isTracking, startTracking, stopTracking } = useLocationTracking(user); // --- LIVE TRACKING: Initialize the hook
+  // --- REFACTOR: isTracking now controls everything ---
+  const { isTracking, startTracking, stopTracking } = useLocationTracking(user);
 
   const alarmSound = useMemo(() => new Audio('/alarm.mp3'), []);
 
+  // Initial fetch for alerts
   useEffect(() => {
     if (token) {
       const fetchAlerts = async () => {
@@ -50,8 +51,12 @@ const EMSDashboard = () => {
     }
   }, [token]);
 
+  // --- REFACTOR: All socket listeners are now controlled by isTracking ('On Duty') state ---
   useEffect(() => {
-    if (!socket || !isMonitoring) return;
+    if (!socket || !isTracking) return;
+
+    // Unlock audio on first interaction
+    alarmSound.play().then(() => alarmSound.pause());
 
     const handleNewAlert = (newAlert) => {
       setAlerts((prevAlerts) => [newAlert, ...prevAlerts]);
@@ -70,7 +75,6 @@ const EMSDashboard = () => {
         setAlerts((prevAlerts) => prevAlerts.filter(alert => alert._id !== alertId));
     };
 
-    // --- LIVE TRACKING: Listen for responder location updates ---
     const handleLocationsBroadcast = (locations) => {
         setResponderLocations(locations);
     };
@@ -86,15 +90,10 @@ const EMSDashboard = () => {
       socket.off('alert-archived', handleAlertArchived);
       socket.off('ems-locations-broadcast', handleLocationsBroadcast);
     };
-  }, [socket, isMonitoring, alarmSound]);
+  }, [socket, isTracking, alarmSound]);
 
   const handleAlertClick = (alertId) => {
     navigate(`/alert/${alertId}`);
-  };
-
-  const startMonitoring = () => {
-    alarmSound.play().then(() => alarmSound.pause());
-    setIsMonitoring(true);
   };
 
   if (loading) return <div className="dashboard-loading">Loading alerts...</div>;
@@ -107,7 +106,6 @@ const EMSDashboard = () => {
             <span>EMS Control Tower</span>
         </Link>
         <nav className="dashboard-nav">
-            {/* --- LIVE TRACKING: On Duty Toggle --- */}
             <div className="on-duty-toggle">
                 <label htmlFor="duty-switch">On Duty</label>
                 <label className="switch">
@@ -125,50 +123,43 @@ const EMSDashboard = () => {
 
       {error && <div className="dashboard-error">Error: {error}</div>}
 
+      {/* --- REFACTOR: Notification prompt is always visible if not granted -- */}
       {notificationStatus !== 'granted' && (
         <div className="notification-prompt">
-          <p>Enable push notifications to receive alerts even when the app is in the background.</p>
+          <p>You must enable push notifications to go on duty.</p>
           <button onClick={requestPermissionAndGetToken}>Enable Notifications</button>
         </div>
       )}
 
-      {!isMonitoring ? (
-        <div className="monitoring-gate">
-            <h2>Ready to Monitor?</h2>
-            <p>Click the button below to start receiving live alerts.</p>
-            <button onClick={startMonitoring} className="start-monitoring-btn">Start Monitoring</button>
-        </div>
-      ) : (
-        <div className="dashboard-content">
-            <div className="alerts-list-panel">
-                <h2 className="panel-header">Incoming Alerts ({alerts.length})</h2>
-                <ul className="alerts-list">
-                    {alerts.length > 0 ? alerts.map((alert) => (
-                        <li key={alert._id}
-                            className={`alert-item status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}
-                            onClick={() => handleAlertClick(alert._id)}>
-                            <div className="alert-item-header">
-                                <span className="incident-type">{alert.incidentType}</span>
-                                <span className="status-badge">{alert.status}</span>
-                            </div>
-                            <div className="alert-item-body">
-                                <p><strong>Reporter:</strong> {alert.reporterName}</p>
-                            </div>
-                            <div className="alert-item-footer">
-                                <small>{new Date(alert.createdAt).toLocaleString()}</small>
-                            </div>
-                        </li>
-                    )) : (
-                        <div className="no-alerts-message">No active alerts. Waiting for new alerts...</div>
-                    )}
-                </ul>
-            </div>
-            <div className="map-panel">
-              {/* --- LIVE TRACKING: Pass responder locations to the map --- */}
-              <MapView alerts={alerts} responders={responderLocations} />
-            </div>
-        </div>
-      )}
+      {/* --- REFACTOR: No more monitoring gate, content is always visible --- */}
+      <div className="dashboard-content">
+          <div className="alerts-list-panel">
+              <h2 className="panel-header">Incoming Alerts ({alerts.length})</h2>
+              <ul className="alerts-list">
+                  {alerts.length > 0 ? alerts.map((alert) => (
+                      <li key={alert._id}
+                          className={`alert-item status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}
+                          onClick={() => handleAlertClick(alert._id)}>
+                          <div className="alert-item-header">
+                              <span className="incident-type">{alert.incidentType}</span>
+                              <span className="status-badge">{alert.status}</span>
+                          </div>
+                          <div className="alert-item-body">
+                              <p><strong>Reporter:</strong> {alert.reporterName}</p>
+                          </div>
+                          <div className="alert-item-footer">
+                              <small>{new Date(alert.createdAt).toLocaleString()}</small>
+                          </div>
+                      </li>
+                  )) : (
+                      <div className="no-alerts-message">No active alerts.</div>
+                  )}
+              </ul>
+          </div>
+          <div className="map-panel">
+            <MapView alerts={alerts} responders={responderLocations} />
+          </div>
+      </div>
     </div>
   );
 };
