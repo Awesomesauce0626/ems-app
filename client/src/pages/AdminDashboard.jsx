@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
+import API_BASE_URL from '../api';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -14,7 +14,6 @@ const AdminDashboard = () => {
         const fetchUsers = async () => {
             if (!token) return;
             try {
-                // --- DEPLOYMENT FIX: Use the central API URL (stray backslash removed) ---
                 const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
@@ -50,7 +49,11 @@ const AdminDashboard = () => {
     return (
         <div className="admin-dashboard-container">
             <header className="admin-header">
-                <h1>Administrator Dashboard</h1>
+                {/* --- UX ENHANCEMENT: Universal Home Button --- */}
+                <Link to="/" className="header-logo-link">
+                    <img src="/prc-logo.png" alt="PRC Logo" />
+                    <span>Admin Dashboard</span>
+                </Link>
                 <nav className="admin-nav">
                     <Link to="/dashboard/ems" className="nav-link">EMS Dashboard</Link>
                     <Link to="/dashboard/citizen" className="nav-link">Citizen Dashboard</Link>

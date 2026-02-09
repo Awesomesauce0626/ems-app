@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
-import usePushNotifications from '../hooks/usePushNotifications'; // --- PUSH NOTIFICATIONS: Import the hook
+import usePushNotifications from '../hooks/usePushNotifications';
 import MapView from '../components/MapView';
 import API_BASE_URL from '../api';
 import './EMSDashboard.css';
@@ -16,7 +16,6 @@ const EMSDashboard = () => {
   const { token, user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // --- PUSH NOTIFICATIONS: Initialize the hook ---
   const { requestPermissionAndGetToken, notificationStatus } = usePushNotifications(token);
 
   const alarmSound = useMemo(() => new Audio('/alarm.mp3'), []);
@@ -93,9 +92,11 @@ const EMSDashboard = () => {
   return (
     <div className="ems-dashboard">
       <header className="dashboard-header">
-        <div className="header-content">
-            <h1>EMS Control Tower</h1>
-        </div>
+        {/* --- UX ENHANCEMENT: Universal Home Button --- */}
+        <Link to="/" className="header-logo-link">
+            <img src="/prc-logo.png" alt="PRC Logo" />
+            <span>EMS Control Tower</span>
+        </Link>
         <nav className="dashboard-nav">
             {user?.role === 'admin' && (
                 <Link to="/dashboard/admin" className="nav-link admin-link">Return to Admin</Link>
@@ -107,7 +108,6 @@ const EMSDashboard = () => {
 
       {error && <div className="dashboard-error">Error: {error}</div>}
 
-      {/* --- PUSH NOTIFICATIONS: Notification permission prompt -- */}
       {notificationStatus !== 'granted' && (
         <div className="notification-prompt">
           <p>Enable push notifications to receive alerts even when the app is in the background.</p>

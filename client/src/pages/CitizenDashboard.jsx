@@ -83,6 +83,11 @@ const CitizenDashboard = () => {
   return (
     <div className="citizen-dashboard">
       <header className="cd-header">
+        {/* --- UX ENHANCEMENT: Universal Home Button --- */}
+        <Link to="/" className="header-logo-link">
+            <img src="/prc-logo.png" alt="PRC Logo" />
+            <span>PRC-CN EMS</span>
+        </Link>
         <div className="user-info">
           <h1>Welcome, {user.firstName}!</h1>
           <p>Your personal emergency hub.</p>
@@ -99,7 +104,6 @@ const CitizenDashboard = () => {
         <div className="cd-actions">
           <h2>Dashboard</h2>
           <button onClick={openAlertModal} className="new-alert-button">Create New Alert</button>
-          {/* --- ENHANCEMENT: Add First-Aid Guide Button --- */}
           <Link to="/first-aid" className="first-aid-button">View First-Aid Guide</Link>
         </div>
 
@@ -132,7 +136,7 @@ const CitizenDashboard = () => {
           <p className="map-optional-text">Optional: Drag the pin to the exact incident location.</p>
           <LocationPickerMap center={initialCenter} onLocationChange={handleLocationChange} />
         </div>
-        {locationError && <p className="location-error">{locationError}</p>}
+        {locationError && <p className="location-error">{error}</p>}
         <h2 style={{ marginTop: '1.5rem' }}>Alert Details</h2>
         <AlertForm onSubmit={handleAlertSubmit} isSubmitting={isSubmitting} />
       </Modal>

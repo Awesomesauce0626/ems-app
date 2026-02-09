@@ -11,6 +11,24 @@
     margin-bottom: 2rem;
 }
 
+/* --- UX ENHANCEMENT: Styles for header logo link --- */
+.header-logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+}
+
+.header-logo-link img {
+    height: 40px;
+    margin-right: 0.75rem;
+}
+
+.header-logo-link span {
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
 .cd-header h1 {
     margin: 0;
 }
@@ -75,7 +93,6 @@
     margin-top: 0;
 }
 
-/* Re-using some styles from EMS Dashboard for consistency */
 .alerts-list {
   list-style-type: none;
   padding: 0;

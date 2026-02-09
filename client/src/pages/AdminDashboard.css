@@ -14,8 +14,23 @@
     border-bottom: 1px solid #dee2e6;
 }
 
-.admin-header h1 {
-    margin: 0;
+/* --- UX ENHANCEMENT: Universal Header Styles --- */
+.header-logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    gap: 0.75rem;
+}
+
+.header-logo-link img {
+    height: 40px;
+}
+
+.header-logo-link span {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #343a40;
 }
 
 .admin-nav {
@@ -41,13 +56,6 @@
   padding: 0;
   cursor: pointer;
   font-family: inherit;
-  color: #6c757d;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.logout-btn:hover {
-    color: #EE3224;
 }
 
 .admin-loading, .admin-error {
@@ -99,7 +107,6 @@
     border: 1px solid #ced4da;
 }
 
-/* --- RESPONSIVENESS FIX: For mobile and tablet screens --- */
 @media (max-width: 768px) {
     .admin-header {
         flex-direction: column;
@@ -113,12 +120,10 @@
         gap: 0.5rem;
     }
 
-    /* Force table to not be like a table anymore */
 	.user-table, .user-table thead, .user-table tbody, .user-table th, .user-table td, .user-table tr {
 		display: block;
 	}
 
-	/* Hide table headers (but not display: none;, for accessibility) */
 	.user-table thead tr {
 		position: absolute;
 		top: -9999px;
@@ -132,7 +137,6 @@
     }
 
 	.user-table td {
-		/* Behave like a "row" */
 		border: none;
 		border-bottom: 1px solid #e9ecef;
 		position: relative;
@@ -141,9 +145,7 @@
 	}
 
 	.user-table td:before {
-		/* Now like a table header */
 		position: absolute;
-		/* Top/left values mimic padding */
 		top: 1rem;
 		left: 1.5rem;
 		width: 45%;
@@ -153,7 +155,6 @@
         font-weight: 700;
 	}
 
-	/* Label the data */
 	.user-table td:nth-of-type(1):before { content: "Name"; }
 	.user-table td:nth-of-type(2):before { content: "Email"; }
 	.user-table td:nth-of-type(3):before { content: "Role"; }
