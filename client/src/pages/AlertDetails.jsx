@@ -75,10 +75,10 @@ const AlertDetails = () => {
 
       const updatedAlertData = await res.json();
 
-      // --- DEFINITIVE BUG FIX v2: Check for archival message first ---
       if (updatedAlertData.message && updatedAlertData.message.includes('archived')) {
-        alert('Alert completed and archived. Returning to dashboard.');
-        navigate('/dashboard/ems', { replace: true }); // Use replace to prevent back navigation issues
+        // --- DEFINITIVE FIX v3: Use window.alert() to avoid variable shadowing ---
+        window.alert('Alert completed and archived. Returning to dashboard.');
+        navigate('/dashboard/ems', { replace: true });
       } else if (updatedAlertData.alert) {
         setAlert(updatedAlertData.alert);
         setNote('');
