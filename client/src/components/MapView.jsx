@@ -5,25 +5,26 @@ import L from 'leaflet';
 import './MapView.css';
 
 delete L.Icon.Default.prototype._getIconUrl;
+
+// --- Standard Red Icon for Alerts ---
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png',
 });
 
-// --- LIVE TRACKING: Custom icon for responders ---
-const responderIcon = new L.Icon({
-    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-    className: 'responder-marker' // For custom styling
+// --- DEFINITIVE FIX: Use a pre-made blue icon for responders ---
+const blueIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
 });
 
-const MapView = ({ alerts, responders }) => { // --- LIVE TRACKING: Accept responders prop
+
+const MapView = ({ alerts, responders }) => {
   const position = [14.113, 122.95];
 
   return (
@@ -33,7 +34,7 @@ const MapView = ({ alerts, responders }) => { // --- LIVE TRACKING: Accept respo
         attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors & © <a href="https://carto.com/attributions">CARTO</a>'
       />
 
-      {/* --- Render Alert Markers --- */}
+      {/* --- Render Alert Markers (Red) --- */}
       {alerts.map(alert => {
         if (alert.location && alert.location.latitude && alert.location.longitude) {
           const icon = new L.Icon.Default();
@@ -62,14 +63,14 @@ const MapView = ({ alerts, responders }) => { // --- LIVE TRACKING: Accept respo
         return null;
       })}
 
-      {/* --- LIVE TRACKING: Render Responder Markers --- */}
+      {/* --- Render Responder Markers (Blue) --- */}
       {responders && responders.map(responder => {
         if (responder.location && responder.location.lat && responder.location.lng) {
           return (
             <Marker
               key={responder.id}
               position={[responder.location.lat, responder.location.lng]}
-              icon={responderIcon}
+              icon={blueIcon} // Use the new blue icon
             >
               <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false}>
                 <strong>{responder.user.name}</strong><br />
