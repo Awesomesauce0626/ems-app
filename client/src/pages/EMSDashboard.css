@@ -15,6 +15,7 @@
   align-items: center;
 }
 
+/* --- UX ENHANCEMENT: Universal Header with clear label --- */
 .header-logo-link {
     display: flex;
     align-items: center;
@@ -33,13 +34,17 @@
     color: #343a40;
 }
 
+/* Add a subtle underline on hover to indicate it's a link */
+.header-logo-link:hover span {
+    text-decoration: underline;
+}
+
 .dashboard-nav {
   display: flex;
   align-items: center;
   gap: 1.5rem;
 }
 
-/* --- LIVE TRACKING: Styles for On Duty Toggle --- */
 .on-duty-toggle {
     display: flex;
     align-items: center;

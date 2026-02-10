@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// --- DEFINITIVE FIX: Remove the import for the broken package ---
+import { Link } from 'react-router-dom'; // --- UX ENHANCEMENT: Import Link
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
 import API_BASE_URL from '../api';
@@ -92,8 +92,6 @@ const QuickAccessForm = () => {
 
   const handleSmsSend = () => {
       const message = `PRC-CN EMS ALERT:\nIncident: ${formData.incidentType}\nAddress: ${formData.address}\nReporter: ${formData.reporterName}, ${formData.reporterPhone}\nPatients: ${formData.patientCount}\nDetails: ${formData.description}`;
-
-      // --- DEFINITIVE FIX: This universal link works everywhere and requires no plugins ---
       window.location.href = `sms:${EMERGENCY_HOTLINE}?body=${encodeURIComponent(message)}`;
   };
 
@@ -123,7 +121,11 @@ const QuickAccessForm = () => {
               <h2>Alert Submitted Successfully!</h2>
               <p>Thank you for your report. The EMS team has been notified.</p>
               <p><strong>Please keep your phone line open. An EMS dispatcher may call you for confirmation or additional details.</strong></p>
-              <button onClick={() => window.location.reload()} className="submit-another-btn">Submit Another Report</button>
+              {/* --- UX ENHANCEMENT: Add Back to Homepage button --- */}
+              <div className="success-actions">
+                <Link to="/" className="homepage-btn">Back to Homepage</Link>
+                <button onClick={() => window.location.reload()} className="submit-another-btn">Submit Another Report</button>
+              </div>
           </div>
       </div>
     )
