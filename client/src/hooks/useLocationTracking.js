@@ -1,53 +1,52 @@
-// --- LIVE TRACKING: Custom Hook for tracking and sending location (Hybrid Approach) ---
+// --- LIVE TRACKING: Custom Hook for tracking and sending location (Hybrid & Persistent) ---
 
 import { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../context/SocketContext';
 import { Capacitor } from '@capacitor/core';
 
-// Import the custom plugin bridge
 import { registerPlugin } from '@capacitor/core';
 const LocationService = registerPlugin('LocationService');
 
 const useLocationTracking = (user) => {
-  const [isTracking, setIsTracking] = useState(false);
+  // --- PERSISTENCE FIX: Initialize state from localStorage ---
+  const [isTracking, setIsTracking] = useState(() => localStorage.getItem('isOnDuty') === 'true');
   const [error, setError] = useState(null);
   const socket = useSocket();
   const trackingIntervalRef = useRef(null);
 
-  const startTracking = () => {
-    if (Capacitor.isNativePlatform()) {
-      // --- NATIVE MOBILE LOGIC ---
-      LocationService.startService();
-    } else {
-      // --- WEB BROWSER LOGIC ---
-      if (!navigator.geolocation) {
-        setError('Geolocation is not supported by your browser.');
-        return;
-      }
-      if (!socket) {
-          setError('Real-time connection not available.');
-          return;
-      }
-      sendLocation();
-      trackingIntervalRef.current = setInterval(sendLocation, 15000);
-    }
-    setIsTracking(true);
-    setError(null);
-  };
+  // --- PERSISTENCE FIX: Sync state to localStorage whenever it changes ---
+  useEffect(() => {
+    localStorage.setItem('isOnDuty', isTracking);
 
-  const stopTracking = () => {
-    if (Capacitor.isNativePlatform()) {
-      // --- NATIVE MOBILE LOGIC ---
-      LocationService.stopService();
+    if (isTracking) {
+      if (Capacitor.isNativePlatform()) {
+        LocationService.startService();
+      } else {
+        if (!navigator.geolocation || !socket) return;
+        sendLocation(); // Send immediately
+        trackingIntervalRef.current = setInterval(sendLocation, 15000);
+      }
     } else {
-      // --- WEB BROWSER LOGIC ---
+      if (Capacitor.isNativePlatform()) {
+        LocationService.stopService();
+      } else {
+        if (trackingIntervalRef.current) {
+          clearInterval(trackingIntervalRef.current);
+        }
+      }
+    }
+
+    // Cleanup interval on component unmount
+    return () => {
       if (trackingIntervalRef.current) {
         clearInterval(trackingIntervalRef.current);
-        trackingIntervalRef.current = null;
       }
-    }
-    setIsTracking(false);
-  };
+    };
+  }, [isTracking, socket, user]);
+
+  // The public functions to be called by the button
+  const startTracking = () => setIsTracking(true);
+  const stopTracking = () => setIsTracking(false);
 
   const sendLocation = () => {
     navigator.geolocation.getCurrentPosition(
@@ -63,7 +62,9 @@ const useLocationTracking = (user) => {
             lng: longitude,
           },
         };
-        socket.emit('ems-location-update', locationData);
+        if(socket?.connected) {
+            socket.emit('ems-location-update', locationData);
+        }
       },
       (err) => {
         console.error('Could not get location:', err.message);
@@ -71,14 +72,6 @@ const useLocationTracking = (user) => {
       { enableHighAccuracy: true }
     );
   };
-
-  useEffect(() => {
-    return () => {
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
-      }
-    };
-  }, []);
 
   return { isTracking, startTracking, stopTracking, error };
 };
