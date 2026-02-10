@@ -24,6 +24,7 @@ if (isProduction) {
 const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
 const adminRoutes = require('./routes/admin');
+const reportRoutes = require('./routes/reports'); // --- NEW: Import report routes
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -47,6 +48,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/reports', reportRoutes); // --- NEW: Use report routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend is running' });
 });
@@ -58,22 +60,18 @@ if (isProduction) {
   });
 }
 
-// --- LIVE TRACKING: In-memory storage for responder locations ---
 const responderLocations = new Map();
 
 io.on('connection', (socket) => {
   console.log('a user connected:', socket.id);
 
-  // --- LIVE TRACKING: Listen for location updates from EMS personnel ---
   socket.on('ems-location-update', (data) => {
     responderLocations.set(socket.id, { ...data, id: socket.id });
-    // Broadcast the updated locations to all clients
     io.emit('ems-locations-broadcast', Array.from(responderLocations.values()));
   });
 
   socket.on('disconnect', () => {
     console.log('user disconnected:', socket.id);
-    // --- LIVE TRACKING: Remove disconnected user from the map ---
     responderLocations.delete(socket.id);
     io.emit('ems-locations-broadcast', Array.from(responderLocations.values()));
   });

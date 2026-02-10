@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Telephony } from '@capacitor-community/telephony';
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
 import API_BASE_URL from '../api';
 import '../components/AlertForm.css';
 import './QuickAccessForm.css';
+
+const EMERGENCY_HOTLINE = '09477357651'; // IMPORTANT: Replace with your actual emergency number
 
 const QuickAccessForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -11,7 +15,9 @@ const QuickAccessForm = () => {
   const [location, setLocation] = useState(null);
   const [initialCenter, setInitialCenter] = useState([14.113, 122.95]);
   const [locationError, setLocationError] = useState(null);
-  const [isSuccess, setIsSuccess] = useState(false); // --- UX FIX: State for success screen
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [formData, setFormData] = useState(null);
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -21,10 +27,7 @@ const QuickAccessForm = () => {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const initialPos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
+        const initialPos = { lat: position.coords.latitude, lng: position.coords.longitude };
         setInitialCenter([initialPos.lat, initialPos.lng]);
         setLocation(initialPos);
       },
@@ -33,6 +36,14 @@ const QuickAccessForm = () => {
         setLocation(null);
       }
     );
+
+    const handleOnlineStatus = () => setIsOffline(!navigator.onLine);
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+    return () => {
+      window.removeEventListener('online', handleOnlineStatus);
+      window.removeEventListener('offline', handleOnlineStatus);
+    };
   }, []);
 
   const handleLocationChange = (newLocation) => {
@@ -40,6 +51,11 @@ const QuickAccessForm = () => {
   };
 
   const onSubmit = async (data) => {
+    if (isOffline) {
+        setFormData(data);
+        return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -66,7 +82,7 @@ const QuickAccessForm = () => {
 
       if (!alertRes.ok) throw new Error('Failed to submit alert');
 
-      setIsSuccess(true); // --- UX FIX: Show success screen
+      setIsSuccess(true);
 
     } catch (err) {
       setError(err.message || 'An unexpected error occurred.');
@@ -75,7 +91,35 @@ const QuickAccessForm = () => {
     }
   };
 
-  // --- UX FIX: Render success screen ---
+  const handleSmsSend = () => {
+      const message = `PRC-CN EMS ALERT:\nIncident: ${formData.incidentType}\nAddress: ${formData.address}\nReporter: ${formData.reporterName}, ${formData.reporterPhone}\nPatients: ${formData.patientCount}\nDetails: ${formData.description}`;
+
+      if (Capacitor.isNativePlatform()) {
+          Telephony.send({ addresses: [EMERGENCY_HOTLINE], body: message });
+      } else {
+          window.location.href = `sms:${EMERGENCY_HOTLINE}?body=${encodeURIComponent(message)}`;
+      }
+  };
+
+  const handleCall = () => {
+    window.location.href = `tel:${EMERGENCY_HOTLINE}`;
+  };
+
+  if (isOffline && formData) {
+      return (
+        <div className="quick-form-container">
+            <div className="offline-container">
+                <h2>No Internet Connection</h2>
+                <p>You can send the alert via SMS or call the emergency hotline directly.</p>
+                <div className="offline-actions">
+                    <button onClick={handleSmsSend} className="offline-btn sms-btn">Send Alert via SMS</button>
+                    <button onClick={handleCall} className="offline-btn call-btn">Call Emergency Hotline</button>
+                </div>
+            </div>
+        </div>
+      );
+  }
+
   if (isSuccess) {
     return (
       <div className="quick-form-container">

@@ -51,6 +51,30 @@ const ReportsPage = () => {
         }
     };
 
+    // --- NEW: Function to handle report downloads ---
+    const handleDownload = async (format) => {
+        const url = `${API_BASE_URL}/api/reports/${format}`;
+        try {
+            const res = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed to download report');
+
+            const blob = await res.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `completed_alerts_report.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(downloadUrl);
+            a.remove();
+
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
     if (loading) return <div className="reports-loading">Loading reports...</div>;
 
     return (
@@ -60,7 +84,11 @@ const ReportsPage = () => {
                     <img src="/prc-logo.png" alt="PRC Logo" />
                     <span>Completed Reports</span>
                 </Link>
-                <button onClick={() => navigate(-1)} className="back-button">← Back</button>
+                <div className="header-actions">
+                    <button onClick={() => handleDownload('pdf')} className="download-btn pdf">Download PDF</button>
+                    <button onClick={() => handleDownload('excel')} className="download-btn excel">Download Excel</button>
+                    <button onClick={() => navigate(-1)} className="back-button">← Back</button>
+                </div>
             </header>
 
             {error && <div className="reports-error">Error: {error}</div>}

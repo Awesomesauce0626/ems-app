@@ -6,60 +6,73 @@
 }
 
 .sos-button {
-  width: 200px;
-  height: 200px;
+  width: 180px;
+  height: 180px;
+  background-color: #EE3224;
   border-radius: 50%;
-  background-color: #EE3224; /* PRC Red */
-  border: none;
+  border: 10px solid #d62112;
   color: white;
-  font-size: 3rem;
-  font-weight: bold;
-  cursor: pointer;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
+  outline: none;
+  position: relative;
   z-index: 10;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease;
+  -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
 }
 
-.sos-button:hover {
-    transform: scale(1.05);
+/* --- ENHANCEMENT: Progress Circle --- */
+.progress-circle {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  right: -15px;
+  bottom: -15px;
+  border-radius: 50%;
+  transition: background 0.1s linear;
+  transform: rotate(-90deg); /* Start from the top */
 }
 
 .sos-button-text-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    line-height: 1;
+  position: relative; /* Ensure text is on top of progress circle */
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .sos-button-text {
-    font-size: 4rem;
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .sos-button-subtext {
-    font-size: 1.2rem;
-    margin-top: 5px;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-top: 5px;
 }
 
 .sos-pulse {
   position: absolute;
-  width: 200px;
-  height: 200px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   background-color: #EE3224;
-  animation: pulse 2s infinite;
+  animation: pulse-animation 2s infinite;
   z-index: 1;
 }
 
-@keyframes pulse {
+@keyframes pulse-animation {
   0% {
     transform: scale(1);
     opacity: 0.7;
   }
   100% {
-    transform: scale(1.8);
+    transform: scale(1.6);
     opacity: 0;
   }
 }
