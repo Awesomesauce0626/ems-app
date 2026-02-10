@@ -1,7 +1,12 @@
-// --- LIVE TRACKING: Custom Hook for tracking and sending location ---
+// --- LIVE TRACKING: Custom Hook for tracking and sending location (Hybrid Approach) ---
 
 import { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../context/SocketContext';
+import { Capacitor } from '@capacitor/core';
+
+// Import the custom plugin bridge
+import { registerPlugin } from '@capacitor/core';
+const LocationService = registerPlugin('LocationService');
 
 const useLocationTracking = (user) => {
   const [isTracking, setIsTracking] = useState(false);
@@ -10,27 +15,36 @@ const useLocationTracking = (user) => {
   const trackingIntervalRef = useRef(null);
 
   const startTracking = () => {
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser.');
-      return;
-    }
-
-    if (!socket) {
-        setError('Real-time connection not available.');
+    if (Capacitor.isNativePlatform()) {
+      // --- NATIVE MOBILE LOGIC ---
+      LocationService.startService();
+    } else {
+      // --- WEB BROWSER LOGIC ---
+      if (!navigator.geolocation) {
+        setError('Geolocation is not supported by your browser.');
         return;
+      }
+      if (!socket) {
+          setError('Real-time connection not available.');
+          return;
+      }
+      sendLocation();
+      trackingIntervalRef.current = setInterval(sendLocation, 15000);
     }
-
-    // Get location once immediately, then start interval
-    sendLocation();
-    trackingIntervalRef.current = setInterval(sendLocation, 15000); // Send update every 15 seconds
     setIsTracking(true);
     setError(null);
   };
 
   const stopTracking = () => {
-    if (trackingIntervalRef.current) {
-      clearInterval(trackingIntervalRef.current);
-      trackingIntervalRef.current = null;
+    if (Capacitor.isNativePlatform()) {
+      // --- NATIVE MOBILE LOGIC ---
+      LocationService.stopService();
+    } else {
+      // --- WEB BROWSER LOGIC ---
+      if (trackingIntervalRef.current) {
+        clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
     }
     setIsTracking(false);
   };
@@ -52,15 +66,12 @@ const useLocationTracking = (user) => {
         socket.emit('ems-location-update', locationData);
       },
       (err) => {
-        // Don't set a state error here as it could be noisy.
-        // A dispatcher will simply see the user as offline.
         console.error('Could not get location:', err.message);
       },
-      { enableHighAccuracy: true } // Request high accuracy for responders
+      { enableHighAccuracy: true }
     );
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (trackingIntervalRef.current) {
