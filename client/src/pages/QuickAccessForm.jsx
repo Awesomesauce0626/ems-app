@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { Telephony } from '@capacitor-community/telephony';
+// --- DEFINITIVE FIX: Remove the import for the broken package ---
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
 import API_BASE_URL from '../api';
 import '../components/AlertForm.css';
 import './QuickAccessForm.css';
 
-const EMERGENCY_HOTLINE = '09477357651'; // Your actual emergency number
+const EMERGENCY_HOTLINE = '09477357651';
 
 const QuickAccessForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,11 +93,8 @@ const QuickAccessForm = () => {
   const handleSmsSend = () => {
       const message = `PRC-CN EMS ALERT:\nIncident: ${formData.incidentType}\nAddress: ${formData.address}\nReporter: ${formData.reporterName}, ${formData.reporterPhone}\nPatients: ${formData.patientCount}\nDetails: ${formData.description}`;
 
-      if (Capacitor.isNativePlatform()) {
-          Telephony.send({ addresses: [EMERGENCY_HOTLINE], body: message });
-      } else {
-          window.location.href = `sms:${EMERGENCY_HOTLINE}?body=${encodeURIComponent(message)}`;
-      }
+      // --- DEFINITIVE FIX: This universal link works everywhere and requires no plugins ---
+      window.location.href = `sms:${EMERGENCY_HOTLINE}?body=${encodeURIComponent(message)}`;
   };
 
   const handleCall = () => {
