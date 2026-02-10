@@ -7,7 +7,7 @@ import API_BASE_URL from '../api';
 import '../components/AlertForm.css';
 import './QuickAccessForm.css';
 
-const EMERGENCY_HOTLINE = '09477357651'; // IMPORTANT: Replace with your actual emergency number
+const EMERGENCY_HOTLINE = '09477357651'; // Your actual emergency number
 
 const QuickAccessForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
