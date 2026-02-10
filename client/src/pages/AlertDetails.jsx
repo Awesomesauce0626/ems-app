@@ -27,7 +27,7 @@ const AlertDetails = () => {
   const { id } = useParams();
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const [alert, setAlert] = useState(null);
+  const [alertData, setAlertData] = useState(null); // FIX: Renamed state variable to avoid shadowing
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('');
@@ -43,7 +43,7 @@ const AlertDetails = () => {
         });
         if (!res.ok) throw new Error('Failed to fetch alert details');
         const data = await res.json();
-        setAlert(data);
+        setAlertData(data);
         setStatus(data.status);
       } catch (err) {
         setError(err.message);
@@ -73,14 +73,13 @@ const AlertDetails = () => {
           throw new Error(errorData.message || 'Failed to update status');
       }
 
-      const updatedAlertData = await res.json();
+      const updatedData = await res.json();
 
-      if (updatedAlertData.message && updatedAlertData.message.includes('archived')) {
-        // --- DEFINITIVE FIX v3: Use window.alert() to avoid variable shadowing ---
+      if (updatedData.message && updatedData.message.includes('archived')) {
         window.alert('Alert completed and archived. Returning to dashboard.');
         navigate('/dashboard/ems', { replace: true });
-      } else if (updatedAlertData.alert) {
-        setAlert(updatedAlertData.alert);
+      } else if (updatedData.alert) {
+        setAlertData(updatedData.alert);
         setNote('');
       } else {
         throw new Error('An unexpected response was received from the server.');
@@ -95,10 +94,10 @@ const AlertDetails = () => {
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
-  if (!alert) return <div>Alert not found.</div>;
+  if (!alertData) return <div>Alert not found.</div>;
 
   const canUpdateStatus = user?.role === 'ems_personnel' || user?.role === 'admin';
-  const currentStatusLabel = statusOptions.find(opt => opt.value === alert.status)?.label || alert.status;
+  const currentStatusLabel = statusOptions.find(opt => opt.value === alertData.status)?.label || alertData.status;
 
   return (
     <div className="alert-details-container">
@@ -113,20 +112,20 @@ const AlertDetails = () => {
       <div className="details-content-grid">
           <div className="details-info-panel">
             <h2>Incident Information</h2>
-            <p><strong>Status:</strong> <span className={`status-badge-lg status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}>{currentStatusLabel}</span></p>
-            <p><strong>Type:</strong> {alert.incidentType}</p>
-            {alert.location?.address && <p><strong>Address:</strong> {alert.location.address}</p>}
-            <p><strong>Description:</strong> {alert.description}</p>
-            <p><strong>Patients:</strong> {alert.patientCount}</p>
+            <p><strong>Status:</strong> <span className={`status-badge-lg status-${alertData.status.toLowerCase().replace(/\s+/g, '-')}`}>{currentStatusLabel}</span></p>
+            <p><strong>Type:</strong> {alertData.incidentType}</p>
+            {alertData.location?.address && <p><strong>Address:</strong> {alertData.location.address}</p>}
+            <p><strong>Description:</strong> {alertData.description}</p>
+            <p><strong>Patients:</strong> {alertData.patientCount}</p>
             <hr />
             <h2>Reporter Details</h2>
-            <p><strong>Name:</strong> {alert.reporterName}</p>
-            <p><strong>Phone:</strong> {alert.reporterPhone}</p>
-            {alert.userId && <p><strong>Account:</strong> Registered User ({alert.userId.email})</p>}
+            <p><strong>Name:</strong> {alertData.reporterName}</p>
+            <p><strong>Phone:</strong> {alertData.reporterPhone}</p>
+            {alertData.userId && <p><strong>Account:</strong> Registered User ({alertData.userId.email})</p>}
             <hr />
             <h2>Timeline</h2>
             <ul className="status-history">
-                {alert.statusHistory.map((entry, index) => {
+                {alertData.statusHistory.map((entry, index) => {
                     const entryStatusLabel = statusOptions.find(opt => opt.value === entry.status)?.label || entry.status;
                     return (
                         <li key={index}>
@@ -139,12 +138,12 @@ const AlertDetails = () => {
           </div>
 
           <div className="details-action-panel">
-              {alert.location && alert.location.latitude && alert.location.longitude && (
+              {alertData.location && alertData.location.latitude && alertData.location.longitude && (
                   <div className="details-map-container">
-                      <MapContainer center={[alert.location.latitude, alert.location.longitude]} zoom={15} style={{ height: '300px', width: '100%' }}>
+                      <MapContainer center={[alertData.location.latitude, alertData.location.longitude]} zoom={15} style={{ height: '300px', width: '100%' }}>
                           <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-                          <Marker position={[alert.location.latitude, alert.location.longitude]}>
-                              <Popup>{alert.incidentType}</Popup>
+                          <Marker position={[alertData.location.latitude, alertData.location.longitude]}>
+                              <Popup>{alertData.incidentType}</Popup>
                           </Marker>
                       </MapContainer>
                   </div>

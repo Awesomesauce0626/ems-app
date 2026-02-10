@@ -9,19 +9,19 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
+    gap: 1rem; /* Add gap for spacing */
 }
 
-/* --- UX ENHANCEMENT: Styles for header logo link --- */
 .header-logo-link {
     display: flex;
     align-items: center;
     text-decoration: none;
     color: inherit;
+    gap: 0.75rem;
 }
 
 .header-logo-link img {
     height: 40px;
-    margin-right: 0.75rem;
 }
 
 .header-logo-link span {
@@ -29,11 +29,15 @@
     font-size: 1.2rem;
 }
 
-.cd-header h1 {
+.user-info {
+    text-align: right;
+}
+
+.user-info h1 {
     margin: 0;
 }
 
-.cd-header p {
+.user-info p {
     margin: 0;
     color: #6c757d;
 }
@@ -47,6 +51,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 1rem;
 }
 
 .cd-actions h2 {
@@ -140,4 +145,22 @@
   text-align: right;
   font-size: 0.8rem;
   color: #6c757d;
+}
+
+/* --- MOBILE RESPONSIVENESS FIX --- */
+@media (max-width: 600px) {
+    .cd-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .user-info {
+        text-align: left;
+    }
+
+    .cd-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }
