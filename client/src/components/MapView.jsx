@@ -4,16 +4,20 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './MapView.css';
 
-delete L.Icon.Default.prototype._getIconUrl;
+// --- DEFINITIVE FIX: Remove all global icon modifications ---
+// We will define icons explicitly to prevent conflicts.
 
-// --- Standard Red Icon for Alerts ---
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png',
+// --- Red Icon for Alerts ---
+const redIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
 });
 
-// --- DEFINITIVE FIX: Use a pre-made blue icon for responders ---
+// --- Blue Icon for Responders ---
 const blueIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -37,15 +41,16 @@ const MapView = ({ alerts, responders }) => {
       {/* --- Render Alert Markers (Red) --- */}
       {alerts.map(alert => {
         if (alert.location && alert.location.latitude && alert.location.longitude) {
-          const icon = new L.Icon.Default();
+          // --- DEFINITIVE FIX: Clone the red icon to apply blinking ---
+          const alertIcon = L.icon(redIcon.options);
           if (alert.status === 'new') {
-            icon.options.className = 'blinking-marker';
+            alertIcon.options.className = 'blinking-marker';
           }
           return (
             <Marker
               key={alert._id}
               position={[alert.location.latitude, alert.location.longitude]}
-              icon={icon}
+              icon={alertIcon}
             >
               <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false}>
                 <strong>{alert.incidentType}</strong><br />
@@ -70,7 +75,7 @@ const MapView = ({ alerts, responders }) => {
             <Marker
               key={responder.id}
               position={[responder.location.lat, responder.location.lng]}
-              icon={blueIcon} // Use the new blue icon
+              icon={blueIcon}
             >
               <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false}>
                 <strong>{responder.user.name}</strong><br />
