@@ -24,7 +24,8 @@ if (isProduction) {
 const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
 const adminRoutes = require('./routes/admin');
-const reportRoutes = require('./routes/reports'); // --- NEW: Import report routes
+const reportRoutes = require('./routes/reports');
+const uploadRoutes = require('./routes/upload'); // Import the new upload route
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -48,7 +49,8 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/reports', reportRoutes); // --- NEW: Use report routes
+app.use('/api/reports', reportRoutes);
+app.use('/api/upload', uploadRoutes); // Use the new upload route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend is running' });
 });

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
 import API_BASE_URL from '../api';
@@ -60,14 +59,6 @@ const QuickAccessForm = () => {
     setError(null);
 
     try {
-      let imageUrl = null;
-      if (data.image && data.image[0]) {
-        const storage = getStorage();
-        const storageRef = ref(storage, `incidents/${Date.now()}_${data.image[0].name}`);
-        const snapshot = await uploadBytes(storageRef, data.image[0]);
-        imageUrl = await getDownloadURL(snapshot.ref);
-      }
-
       const quickAccessRes = await fetch(`${API_BASE_URL}/api/auth/quick-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,6 +67,37 @@ const QuickAccessForm = () => {
 
       if (!quickAccessRes.ok) throw new Error('Failed to get quick access token');
       const { token } = await quickAccessRes.json();
+
+      let imageUrl = null;
+      if (data.image && data.image[0]) {
+        // 1. Get signature from our backend
+        const signRes = await fetch(`${API_BASE_URL}/api/upload/sign`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!signRes.ok) throw new Error('Could not get upload signature from server.');
+        const signData = await signRes.json();
+
+        // 2. Upload image directly to Cloudinary
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', data.image[0]);
+        uploadFormData.append('api_key', signData.apikey);
+        uploadFormData.append('timestamp', signData.timestamp);
+        uploadFormData.append('signature', signData.signature);
+        uploadFormData.append('folder', 'incidents');
+
+        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloudname}/image/upload`;
+
+        const uploadRes = await fetch(cloudinaryUrl, {
+            method: 'POST',
+            body: uploadFormData,
+        });
+        if (!uploadRes.ok) throw new Error('Image upload to Cloudinary failed.');
+        const uploadResult = await uploadRes.json();
+        imageUrl = uploadResult.secure_url;
+      }
 
       const alertData = { ...data, location, imageUrl };
 
