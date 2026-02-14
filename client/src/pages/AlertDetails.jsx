@@ -92,12 +92,25 @@ const AlertDetails = () => {
     }
   };
 
+  const getTransformedImageUrl = (originalUrl) => {
+    if (!originalUrl || !originalUrl.includes('cloudinary.com')) {
+      return originalUrl;
+    }
+    const transformation = "w_800,h_600,c_limit,q_auto,f_auto";
+    const parts = originalUrl.split('/upload/');
+    if (parts.length !== 2) {
+      return originalUrl;
+    }
+    return `${parts[0]}/upload/${transformation}/${parts[1]}`;
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!alertData) return <div>Alert not found.</div>;
 
   const canUpdateStatus = user?.role === 'ems_personnel' || user?.role === 'admin';
   const currentStatusLabel = statusOptions.find(opt => opt.value === alertData.status)?.label || alertData.status;
+  const transformedImageUrl = getTransformedImageUrl(alertData.imageUrl);
 
   return (
     <div className="alert-details-container">
@@ -123,7 +136,7 @@ const AlertDetails = () => {
                 <h2>Incident Image</h2>
                 <div className="incident-image-container">
                   <a href={alertData.imageUrl} target="_blank" rel="noopener noreferrer">
-                    <img src={alertData.imageUrl} alt="Incident" className="incident-image" />
+                    <img src={transformedImageUrl} alt="Incident" className="incident-image" />
                   </a>
                 </div>
               </>
