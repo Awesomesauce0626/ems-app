@@ -33,34 +33,9 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
-
-        <!-- Push Notification Service -->
-        <service
-            android:name=".MyFirebaseMessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-
-        <!-- BACKGROUND TRACKING: Register the new Location Tracking Service -->
-        <service
-            android:name=".LocationTrackingService"
-            android:foregroundServiceType="location"
-            android:enabled="true"
-            android:exported="false" />
-
     </application>
 
     <!-- Permissions -->
+
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-
-    <!-- BACKGROUND TRACKING: Add permissions for location and foreground services -->
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-
 </manifest>

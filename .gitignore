@@ -1,15 +1,32 @@
-# Environment variables
-.env
-
 # Dependencies
-node_modules/
-client/node_modules/
+/node_modules
+/client/node_modules
 
-# Production build output
-client/dist/
+# Build output
+/client/dist
+/client/android/app/build
+/client/android/build
 
-# IDE-specific files
+# Gradle files
+.gradle/
+/client/android/.gradle
+
+# IDE and editor files
 .idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Firebase credentials
+# Local configuration
+/client/android/local.properties
+
+# Secrets
 firebase-service-account-key.json
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
