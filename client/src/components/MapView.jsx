@@ -4,10 +4,6 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './MapView.css';
 
-// --- DEFINITIVE FIX: Remove all global icon modifications ---
-// We will define icons explicitly to prevent conflicts.
-
-// --- Red Icon for Alerts ---
 const redIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -17,7 +13,6 @@ const redIcon = new L.Icon({
     shadowSize: [41, 41]
 });
 
-// --- Blue Icon for Responders ---
 const blueIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -26,7 +21,6 @@ const blueIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
-
 
 const MapView = ({ alerts, responders }) => {
   const position = [14.113, 122.95];
@@ -38,19 +32,17 @@ const MapView = ({ alerts, responders }) => {
         attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors & © <a href="https://carto.com/attributions">CARTO</a>'
       />
 
-      {/* --- Render Alert Markers (Red) --- */}
       {alerts.map(alert => {
         if (alert.location && alert.location.latitude && alert.location.longitude) {
-          // --- DEFINITIVE FIX: Clone the red icon to apply blinking ---
-          const alertIcon = L.icon(redIcon.options);
-          if (alert.status === 'new') {
-            alertIcon.options.className = 'blinking-marker';
-          }
+          const isCompleted = alert.status === 'completed' || alert.status === 'cancelled';
+          const markerClass = isCompleted ? '' : 'blinking-marker';
+
           return (
             <Marker
               key={alert._id}
               position={[alert.location.latitude, alert.location.longitude]}
-              icon={alertIcon}
+              icon={redIcon}
+              className={markerClass} // Apply the class directly to the marker
             >
               <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false}>
                 <strong>{alert.incidentType}</strong><br />
@@ -68,7 +60,6 @@ const MapView = ({ alerts, responders }) => {
         return null;
       })}
 
-      {/* --- Render Responder Markers (Blue) --- */}
       {responders && responders.map(responder => {
         if (responder.location && responder.location.lat && responder.location.lng) {
           return (
