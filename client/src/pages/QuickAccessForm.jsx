@@ -8,6 +8,19 @@ import './QuickAccessForm.css';
 
 const EMERGENCY_HOTLINE = '09477357651';
 
+// Helper function to convert Data URL to Blob
+const dataURLtoBlob = (dataurl) => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], {type:mime});
+}
+
 const QuickAccessForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -69,8 +82,7 @@ const QuickAccessForm = () => {
       const { token } = await quickAccessRes.json();
 
       let imageUrl = null;
-      if (data.image && data.image[0]) {
-        // 1. Get signature from our backend
+      if (data.image) {
         const signRes = await fetch(`${API_BASE_URL}/api/upload/sign`, {
             method: 'POST',
             headers: {
@@ -80,9 +92,9 @@ const QuickAccessForm = () => {
         if (!signRes.ok) throw new Error('Could not get upload signature from server.');
         const signData = await signRes.json();
 
-        // 2. Upload image directly to Cloudinary
+        const imageBlob = dataURLtoBlob(data.image.dataUrl);
         const uploadFormData = new FormData();
-        uploadFormData.append('file', data.image[0]);
+        uploadFormData.append('file', imageBlob);
         uploadFormData.append('api_key', signData.apikey);
         uploadFormData.append('timestamp', signData.timestamp);
         uploadFormData.append('signature', signData.signature);

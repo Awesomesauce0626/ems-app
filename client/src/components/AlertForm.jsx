@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 const incidentTypes = [
   { value: 'cardiac_arrest', label: 'Cardiac Arrest' },
@@ -24,11 +25,11 @@ const schema = z.object({
   incidentType: z.string().min(1, 'Incident type is required'),
   description: z.string().optional(),
   patientCount: z.number().int().min(1, 'At least one patient is required'),
-  image: z.any().optional(),
 });
 
 const AlertForm = ({ onSubmit, isSubmitting }) => {
-  const { register, handleSubmit, formState: { errors }, watch } = useForm({
+  const [imageData, setImageData] = useState(null);
+  const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
         patientCount: 1,
@@ -36,10 +37,33 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
     }
   });
 
-  const image = watch("image");
+  const takePicture = async () => {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Prompt, // Prompt user to choose between camera and gallery
+        promptLabelHeader: 'Select Image Source',
+        promptLabelPhoto: 'From Gallery',
+        promptLabelPicture: 'Take a Picture'
+      });
+      setImageData(image);
+    } catch (error) {
+      console.error("Error taking picture:", error);
+    }
+  };
+
+  const handleFormSubmit = (data) => {
+      onSubmit({ ...data, image: imageData });
+  };
+
+  const removeImage = () => {
+      setImageData(null);
+  }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="alert-form">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="alert-form">
       <div className="form-group">
         <label htmlFor="reporterName">Your Name</label>
         <input id="reporterName" {...register('reporterName')} />
@@ -81,12 +105,14 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
       </div>
 
       <div className="form-group">
-        <label htmlFor="image">Upload Image (Optional)</label>
-        <input id="image" type="file" accept="image/*" {...register('image')} />
-        {image && image[0] && (
-          <div className="image-preview">
-            <img src={URL.createObjectURL(image[0])} alt="Preview" />
+        <label>Incident Photo (Optional)</label>
+        {imageData ? (
+          <div className="image-preview-container">
+            <img src={imageData.dataUrl} alt="Incident preview" className="image-preview" />
+            <button type="button" onClick={removeImage} className="remove-image-btn">Remove Image</button>
           </div>
+        ) : (
+          <button type="button" onClick={takePicture} className="add-photo-btn">Add Photo</button>
         )}
       </div>
 
