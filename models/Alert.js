@@ -35,6 +35,9 @@ const alertSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
+  imageUrl: {
+    type: String,
+  },
   status: {
     type: String,
     enum: ['new', 'responding', 'en_route', 'on_scene', 'completed', 'cancelled'],

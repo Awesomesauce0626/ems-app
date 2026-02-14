@@ -27,7 +27,7 @@ const AlertDetails = () => {
   const { id } = useParams();
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const [alertData, setAlertData] = useState(null); // FIX: Renamed state variable to avoid shadowing
+  const [alertData, setAlertData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('');
@@ -117,6 +117,17 @@ const AlertDetails = () => {
             {alertData.location?.address && <p><strong>Address:</strong> {alertData.location.address}</p>}
             <p><strong>Description:</strong> {alertData.description}</p>
             <p><strong>Patients:</strong> {alertData.patientCount}</p>
+            {alertData.imageUrl && (
+              <>
+                <hr />
+                <h2>Incident Image</h2>
+                <div className="incident-image-container">
+                  <a href={alertData.imageUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={alertData.imageUrl} alt="Incident" className="incident-image" />
+                  </a>
+                </div>
+              </>
+            )}
             <hr />
             <h2>Reporter Details</h2>
             <p><strong>Name:</strong> {alertData.reporterName}</p>

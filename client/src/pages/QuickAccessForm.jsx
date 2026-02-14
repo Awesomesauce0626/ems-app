@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // --- UX ENHANCEMENT: Import Link
+import { Link } from 'react-router-dom';
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
 import API_BASE_URL from '../api';
@@ -59,6 +60,14 @@ const QuickAccessForm = () => {
     setError(null);
 
     try {
+      let imageUrl = null;
+      if (data.image && data.image[0]) {
+        const storage = getStorage();
+        const storageRef = ref(storage, `incidents/${Date.now()}_${data.image[0].name}`);
+        const snapshot = await uploadBytes(storageRef, data.image[0]);
+        imageUrl = await getDownloadURL(snapshot.ref);
+      }
+
       const quickAccessRes = await fetch(`${API_BASE_URL}/api/auth/quick-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +77,7 @@ const QuickAccessForm = () => {
       if (!quickAccessRes.ok) throw new Error('Failed to get quick access token');
       const { token } = await quickAccessRes.json();
 
-      const alertData = { ...data, location };
+      const alertData = { ...data, location, imageUrl };
 
       const alertRes = await fetch(`${API_BASE_URL}/api/alerts`, {
         method: 'POST',
@@ -121,7 +130,6 @@ const QuickAccessForm = () => {
               <h2>Alert Submitted Successfully!</h2>
               <p>Thank you for your report. The EMS team has been notified.</p>
               <p><strong>Please keep your phone line open. An EMS dispatcher may call you for confirmation or additional details.</strong></p>
-              {/* --- UX ENHANCEMENT: Add Back to Homepage button --- */}
               <div className="success-actions">
                 <Link to="/" className="homepage-btn">Back to Homepage</Link>
                 <button onClick={() => window.location.reload()} className="submit-another-btn">Submit Another Report</button>

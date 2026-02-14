@@ -16,6 +16,7 @@ router.post('/', auth, async (req, res) => {
       incidentType,
       description,
       patientCount,
+      imageUrl,
     } = req.body;
 
     if (!address) {
@@ -38,6 +39,7 @@ router.post('/', auth, async (req, res) => {
       incidentType,
       description,
       patientCount,
+      imageUrl,
     });
 
     await newAlert.save();

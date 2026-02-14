@@ -1,9 +1,5 @@
 {
   "appId": "com.prc_ems.app",
   "appName": "PRC EMS",
-  "webDir": "dist",
-  "server": {
-    "url": "https://ems-app-phi.vercel.app/",
-    "cleartext": true
-  }
+  "webDir": "dist"
 }

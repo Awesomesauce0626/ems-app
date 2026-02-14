@@ -17,24 +17,26 @@ const incidentTypes = [
   { value: 'other', label: 'Other' },
 ];
 
-// --- DEPLOYMENT FIX: Make address the required field ---
 const schema = z.object({
   reporterName: z.string().min(1, 'Name is required'),
   reporterPhone: z.string().min(1, 'Phone number is required'),
-  address: z.string().min(1, 'Address / Location Description is required'), // Now required
+  address: z.string().min(1, 'Address / Location Description is required'),
   incidentType: z.string().min(1, 'Incident type is required'),
   description: z.string().optional(),
   patientCount: z.number().int().min(1, 'At least one patient is required'),
+  image: z.any().optional(),
 });
 
 const AlertForm = ({ onSubmit, isSubmitting }) => {
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors }, watch } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
         patientCount: 1,
         incidentType: incidentTypes[0].value,
     }
   });
+
+  const image = watch("image");
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="alert-form">
@@ -51,7 +53,6 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
       </div>
 
       <div className="form-group">
-        {/* --- DEPLOYMENT FIX: Update label to show it is required --- */}
         <label htmlFor="address">Address / Location Description</label>
         <textarea id="address" placeholder="e.g., In front of SM City Daet, Vinzons Ave" {...register('address')} />
         {errors.address && <p className="error-message">{errors.address.message}</p>}
@@ -77,6 +78,16 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
         <label htmlFor="description">Description of Incident (Optional)</label>
         <textarea id="description" placeholder="Provide a brief description of the situation..." {...register('description')} />
         {errors.description && <p className="error-message">{errors.description.message}</p>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="image">Upload Image (Optional)</label>
+        <input id="image" type="file" accept="image/*" {...register('image')} />
+        {image && image[0] && (
+          <div className="image-preview">
+            <img src={URL.createObjectURL(image[0])} alt="Preview" />
+          </div>
+        )}
       </div>
 
       <button type="submit" className="submit-button" disabled={isSubmitting}>
