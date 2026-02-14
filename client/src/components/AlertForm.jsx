@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 const incidentTypes = [
   { value: 'cardiac_arrest', label: 'Cardiac Arrest' },
@@ -18,17 +17,17 @@ const incidentTypes = [
   { value: 'other', label: 'Other' },
 ];
 
+// --- DEPLOYMENT FIX: Make address the required field ---
 const schema = z.object({
   reporterName: z.string().min(1, 'Name is required'),
   reporterPhone: z.string().min(1, 'Phone number is required'),
-  address: z.string().min(1, 'Address / Location Description is required'),
+  address: z.string().min(1, 'Address / Location Description is required'), // Now required
   incidentType: z.string().min(1, 'Incident type is required'),
   description: z.string().optional(),
   patientCount: z.number().int().min(1, 'At least one patient is required'),
 });
 
 const AlertForm = ({ onSubmit, isSubmitting }) => {
-  const [imageData, setImageData] = useState(null);
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -37,33 +36,8 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
     }
   });
 
-  const takePicture = async () => {
-    try {
-      const image = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Prompt, // Prompt user to choose between camera and gallery
-        promptLabelHeader: 'Select Image Source',
-        promptLabelPhoto: 'From Gallery',
-        promptLabelPicture: 'Take a Picture'
-      });
-      setImageData(image);
-    } catch (error) {
-      console.error("Error taking picture:", error);
-    }
-  };
-
-  const handleFormSubmit = (data) => {
-      onSubmit({ ...data, image: imageData });
-  };
-
-  const removeImage = () => {
-      setImageData(null);
-  }
-
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="alert-form">
+    <form onSubmit={handleSubmit(onSubmit)} className="alert-form">
       <div className="form-group">
         <label htmlFor="reporterName">Your Name</label>
         <input id="reporterName" {...register('reporterName')} />
@@ -77,6 +51,7 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
       </div>
 
       <div className="form-group">
+        {/* --- DEPLOYMENT FIX: Update label to show it is required --- */}
         <label htmlFor="address">Address / Location Description</label>
         <textarea id="address" placeholder="e.g., In front of SM City Daet, Vinzons Ave" {...register('address')} />
         {errors.address && <p className="error-message">{errors.address.message}</p>}
@@ -102,18 +77,6 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
         <label htmlFor="description">Description of Incident (Optional)</label>
         <textarea id="description" placeholder="Provide a brief description of the situation..." {...register('description')} />
         {errors.description && <p className="error-message">{errors.description.message}</p>}
-      </div>
-
-      <div className="form-group">
-        <label>Incident Photo (Optional)</label>
-        {imageData ? (
-          <div className="image-preview-container">
-            <img src={imageData.dataUrl} alt="Incident preview" className="image-preview" />
-            <button type="button" onClick={removeImage} className="remove-image-btn">Remove Image</button>
-          </div>
-        ) : (
-          <button type="button" onClick={takePicture} className="add-photo-btn">Add Photo</button>
-        )}
       </div>
 
       <button type="submit" className="submit-button" disabled={isSubmitting}>

@@ -79,6 +79,34 @@ const CitizenDashboard = () => {
       setIsSubmitting(false);
     }
   };
+  const handleAccountDeletion = async () => {
+    const confirmation = window.confirm(
+      'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.'
+    );
+
+    if (confirmation) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/delete-account`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Failed to delete account.');
+        }
+
+        alert('Your account has been successfully deleted.');
+        logout();
+      } catch (err) {
+        setError(err.message);
+        alert(`Error: ${err.message}`);
+      }
+    }
+  };
+
 
   return (
     <div className="citizen-dashboard">
@@ -130,6 +158,13 @@ const CitizenDashboard = () => {
           </ul>
         </div>
       </main>
+
+        <footer className="cd-footer">
+          <p>
+            For account-related issues or to request account deletion, please contact support.
+            <button onClick={handleAccountDeletion} className="delete-account-link">Delete My Account</button>
+          </p>
+        </footer>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="modal-map-wrapper">

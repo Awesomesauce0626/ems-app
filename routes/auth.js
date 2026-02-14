@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Alert = require('../models/Alert');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const auth = require('../middleware/auth'); // --- PUSH NOTIFICATIONS: Import auth middleware
+const auth = require('../middleware/auth');
 
 router.post('/register', async (req, res) => {
   try {
@@ -83,13 +84,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// --- PUSH NOTIFICATIONS: Endpoint to save a user's FCM token ---
 router.post('/save-fcm-token', auth, async (req, res) => {
     try {
         const { token: fcmToken } = req.body;
         const userId = req.user.userId;
 
-        // Find the user and add the new token if it doesn't already exist
         const user = await User.findById(userId);
         if (user && !user.fcmTokens.includes(fcmToken)) {
             user.fcmTokens.push(fcmToken);
@@ -119,6 +118,21 @@ router.post('/quick-access', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+router.delete('/delete-account', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    await Alert.deleteMany({ userId: userId });
+
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: 'Account and all associated data have been permanently deleted.' });
+  } catch (error) {
+    console.error('Account Deletion Error:', error);
+    res.status(500).json({ message: 'Server error during account deletion.' });
   }
 });
 

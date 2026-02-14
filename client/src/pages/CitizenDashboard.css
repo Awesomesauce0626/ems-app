@@ -147,6 +147,27 @@
   color: #6c757d;
 }
 
+.cd-footer {
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.delete-account-link {
+    background: none;
+    border: none;
+    color: #EE3224;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+}
+
+.delete-account-link:hover {
+    color: #d62112;
+}
+
 /* --- MOBILE RESPONSIVENESS FIX --- */
 @media (max-width: 600px) {
     .cd-header {
