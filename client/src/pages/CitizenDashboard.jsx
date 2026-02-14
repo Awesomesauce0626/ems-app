@@ -79,6 +79,7 @@ const CitizenDashboard = () => {
       setIsSubmitting(false);
     }
   };
+
   const handleAccountDeletion = async () => {
     const confirmation = window.confirm(
       'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.'
@@ -106,7 +107,6 @@ const CitizenDashboard = () => {
       }
     }
   };
-
 
   return (
     <div className="citizen-dashboard">
@@ -159,12 +159,12 @@ const CitizenDashboard = () => {
         </div>
       </main>
 
-        <footer className="cd-footer">
-          <p>
-            For account-related issues or to request account deletion, please contact support.
-            <button onClick={handleAccountDeletion} className="delete-account-link">Delete My Account</button>
-          </p>
-        </footer>
+      <footer className="cd-footer">
+        <p>
+          For account-related issues or to request account deletion, please contact support.
+          <button onClick={handleAccountDeletion} className="delete-account-link">Delete My Account</button>
+        </p>
+      </footer>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="modal-map-wrapper">

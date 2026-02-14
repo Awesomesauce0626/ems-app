@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// --- DEFINITIVE FIX: Remove the import for the broken package ---
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
 import API_BASE_URL from '../api';
@@ -7,6 +6,19 @@ import '../components/AlertForm.css';
 import './QuickAccessForm.css';
 
 const EMERGENCY_HOTLINE = '09477357651';
+
+// Helper function to convert Data URL to Blob
+const dataURLtoBlob = (dataurl) => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], {type:mime});
+}
 
 const QuickAccessForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,7 +80,37 @@ const QuickAccessForm = () => {
       if (!quickAccessRes.ok) throw new Error('Failed to get quick access token');
       const { token } = await quickAccessRes.json();
 
-      const alertData = { ...data, location };
+      let imageUrl = null;
+      if (data.image) {
+        const signRes = await fetch(`${API_BASE_URL}/api/upload/sign`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!signRes.ok) throw new Error('Could not get upload signature from server.');
+        const signData = await signRes.json();
+
+        const imageBlob = dataURLtoBlob(data.image.dataUrl);
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', imageBlob);
+        uploadFormData.append('api_key', signData.apikey);
+        uploadFormData.append('timestamp', signData.timestamp);
+        uploadFormData.append('signature', signData.signature);
+        uploadFormData.append('folder', 'incidents');
+
+        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloudname}/image/upload`;
+
+        const uploadRes = await fetch(cloudinaryUrl, {
+            method: 'POST',
+            body: uploadFormData,
+        });
+        if (!uploadRes.ok) throw new Error('Image upload to Cloudinary failed.');
+        const uploadResult = await uploadRes.json();
+        imageUrl = uploadResult.secure_url;
+      }
+
+      const alertData = { ...data, location, imageUrl };
 
       const alertRes = await fetch(`${API_BASE_URL}/api/alerts`, {
         method: 'POST',
@@ -92,8 +134,6 @@ const QuickAccessForm = () => {
 
   const handleSmsSend = () => {
       const message = `PRC-CN EMS ALERT:\nIncident: ${formData.incidentType}\nAddress: ${formData.address}\nReporter: ${formData.reporterName}, ${formData.reporterPhone}\nPatients: ${formData.patientCount}\nDetails: ${formData.description}`;
-
-      // --- DEFINITIVE FIX: This universal link works everywhere and requires no plugins ---
       window.location.href = `sms:${EMERGENCY_HOTLINE}?body=${encodeURIComponent(message)}`;
   };
 
