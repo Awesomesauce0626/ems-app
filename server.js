@@ -30,11 +30,26 @@ const uploadRoutes = require('./routes/upload'); // Import the new upload route
 const app = express();
 const httpServer = http.createServer(app);
 
-const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
+const clientURL = process.env.CLIENT_URL || 'http://localhost:5173'; // Your Vercel URL in production
+
+// --- ENHANCEMENT: Create a whitelist for CORS to allow native mobile access ---
+const whitelist = [
+  clientURL,               // Your production web app (Vercel)
+  'http://localhost:5173', // Your local web dev server
+  'http://localhost',      // The origin for Android webview
+  'capacitor://localhost'  // The origin for Capacitor
+];
 
 const corsOptions = {
-  origin: isProduction ? clientURL : 'http://localhost:5173',
-  optionsSuccessStatus: 200
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests) or from the whitelist
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  optionsSuccessStatus: 200,
 };
 
 const io = new Server(httpServer, { cors: corsOptions });
