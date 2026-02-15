@@ -9,15 +9,16 @@ require('dotenv').config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// --- ROBUSTNESS FIX: Initialize Firebase Admin using individual, stable environment variables ---
+// --- FINAL ROBUSTNESS FIX: Initialize Firebase using a Base64-encoded private key ---
 if (isProduction) {
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'); // Replace escaped newlines
+  // Decode the Base64-encoded private key from the environment variable
+  const decodedPrivateKey = Buffer.from(process.env.FIREBASE_PRIVATE_KEY, 'base64').toString('ascii');
 
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: privateKey
+      privateKey: decodedPrivateKey
     })
   });
 } else {
