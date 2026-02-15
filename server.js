@@ -91,7 +91,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('user disconnected:', socket.id);
+    responderLocations.delete(socket.id);
     responderLocations.delete(socket.id);
     io.emit('ems-locations-broadcast', Array.from(responderLocations.values()));
   });
