@@ -9,17 +9,14 @@ require('dotenv').config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// --- FINAL ROBUSTNESS FIX: Initialize Firebase using a Base64-encoded private key ---
+// --- FINAL, FOOLPROOF FIX: Initialize Firebase from a single, Base64-encoded service account file ---
 if (isProduction) {
-  // Decode the Base64-encoded private key from the environment variable
-  const decodedPrivateKey = Buffer.from(process.env.FIREBASE_PRIVATE_KEY, 'base64').toString('ascii');
+  const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('ascii');
+  const serviceAccount = JSON.parse(serviceAccountJson);
 
   admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: decodedPrivateKey
-    })
+    credential: admin.credential.cert(serviceAccount)
   });
 } else {
   const serviceAccount = require('./firebase-service-account-key.json');
