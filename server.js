@@ -72,12 +72,13 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend is running' });
 });
 
-if (isProduction) {
-  app.use(express.static(path.join(__dirname, 'client/dist')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/dist', 'index.html'));
-  });
-}
+// THIS BLOCK HAS BEEN REMOVED AS IT WAS CAUSING THE SERVER TO CRASH
+// if (isProduction) {
+//   app.use(express.static(path.join(__dirname, 'client/dist')));
+//   app.get('*', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'client/dist', 'index.html'));
+//   });
+// }
 
 const responderLocations = new Map();
 
