@@ -9,10 +9,16 @@ require('dotenv').config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// --- ROBUSTNESS FIX: Initialize Firebase Admin using individual, stable environment variables ---
 if (isProduction) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'); // Replace escaped newlines
+
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: privateKey
+    })
   });
 } else {
   const serviceAccount = require('./firebase-service-account-key.json');
@@ -25,24 +31,22 @@ const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
 const adminRoutes = require('./routes/admin');
 const reportRoutes = require('./routes/reports');
-const uploadRoutes = require('./routes/upload'); // Import the new upload route
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const httpServer = http.createServer(app);
 
-const clientURL = process.env.CLIENT_URL || 'http://localhost:5173'; // Your Vercel URL in production
+const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
 
-// --- ENHANCEMENT: Create a whitelist for CORS to allow native mobile access ---
 const whitelist = [
-  clientURL,               // Your production web app (Vercel)
-  'http://localhost:5173', // Your local web dev server
-  'http://localhost',      // The origin for Android webview
-  'capacitor://localhost'  // The origin for Capacitor
+  clientURL,
+  'http://localhost:5173',
+  'http://localhost',
+  'capacitor://localhost'
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests) or from the whitelist
     if (!origin || whitelist.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -65,7 +69,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/upload', uploadRoutes); // Use the new upload route
+app.use('/api/upload', uploadRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend is running' });
 });
