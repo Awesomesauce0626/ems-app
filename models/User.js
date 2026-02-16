@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
+    index: true, // Add this line to create a database index
   },
   password: {
     type: String,
