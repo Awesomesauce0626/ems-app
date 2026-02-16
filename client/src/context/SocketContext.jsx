@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
-import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
 
 const SocketContext = createContext(null);
 
@@ -10,8 +9,10 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    // --- DEPLOYMENT FIX: Use the central API URL for the socket connection ---
-    const newSocket = io(API_BASE_URL, {
+    // Use the absolute URL of the Render backend for the WebSocket connection.
+    // This is necessary because WebSockets do not work with relative paths in the same way as HTTP requests.
+    const socketURL = 'https://ems-app-e26y.onrender.com';
+    const newSocket = io(socketURL, {
         transports: ['websocket', 'polling']
     });
     setSocket(newSocket);
