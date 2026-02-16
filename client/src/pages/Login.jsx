@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import API_BASE_URL from '../api'; // --- DEPLOYMENT FIX: Import the central API URL
+import API_BASE_URL from '../api';
 import './Auth.css';
 
 const schema = z.object({
@@ -32,8 +32,16 @@ const Login = () => {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to login');
+        // Handle non-JSON error responses gracefully
+        const errorText = await res.text();
+        try {
+            const errorData = JSON.parse(errorText);
+            throw new Error(errorData.message || 'Failed to login');
+        } catch (jsonError) {
+            // If parsing fails, the error response was not JSON.
+            // Throw the raw text as the error.
+            throw new Error(errorText || `HTTP error! status: ${res.status}`);
+        }
       }
 
       const { user, token } = await res.json();
@@ -48,7 +56,6 @@ const Login = () => {
       }
 
     } catch (err) {
-      // LOG THE FULL ERROR FOR DIAGNOSTICS
       console.error('Login Error:', err);
       setError(err.message);
     } finally {
