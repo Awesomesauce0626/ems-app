@@ -9,7 +9,6 @@ require('dotenv').config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// --- FINAL, FOOLPROOF FIX: Initialize Firebase from a single, Base64-encoded service account file ---
 if (isProduction) {
   const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
   const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('ascii');
@@ -40,7 +39,8 @@ const whitelist = [
   clientURL,
   'http://localhost:5173',
   'http://localhost',
-  'capacitor://localhost'
+  'capacitor://localhost',
+  'https://localhost' // Add this line for Capacitor Android
 ];
 
 const corsOptions = {
@@ -72,14 +72,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend is running' });
 });
 
-// THIS BLOCK HAS BEEN REMOVED AS IT WAS CAUSING THE SERVER TO CRASH
-// if (isProduction) {
-//   app.use(express.static(path.join(__dirname, 'client/dist')));
-//   app.get('*', (req, res) => {
-//     res.sendFile(path.join(__dirname, 'client/dist', 'index.html'));
-//   });
-// }
-
 const responderLocations = new Map();
 
 io.on('connection', (socket) => {
@@ -91,7 +83,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    responderLocations.delete(socket.id);
     responderLocations.delete(socket.id);
     io.emit('ems-locations-broadcast', Array.from(responderLocations.values()));
   });
