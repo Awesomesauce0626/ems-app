@@ -31,6 +31,7 @@ const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
 const adminRoutes = require('./routes/admin');
 const reportRoutes = require('./routes/reports');
+const uploadRoutes = require('./routes/upload'); // Add this line
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -61,6 +62,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/upload', uploadRoutes); // And add this line
 
 const responderLocations = new Map();
 
