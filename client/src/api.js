@@ -1,13 +1,11 @@
-import { Capacitor } from '@capacitor/core';
-
 // This file centralizes the API base URL for the entire application.
 
-// Use Capacitor's platform check to determine the correct URL.
-// On native mobile, we need the full, absolute URL.
-// On the web, we use a relative path to leverage the Vite proxy for development.
+// Vite's `import.meta.env.DEV` is used to distinguish between development and production.
+// In development (`npm run dev`), we use an empty string for relative paths to work with the Vite proxy.
+// In production builds (for Vercel and Capacitor), we use the full, absolute URL of the Render backend.
 
-const API_BASE_URL = Capacitor.isNativePlatform()
-  ? 'https://ems-app-e26y.onrender.com'
-  : '/api';
+const API_BASE_URL = import.meta.env.DEV
+  ? '' // Use relative paths in development
+  : 'https://ems-app-e26y.onrender.com'; // Use the full production URL otherwise
 
 export default API_BASE_URL;
