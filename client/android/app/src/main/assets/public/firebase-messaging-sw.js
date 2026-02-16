@@ -23,11 +23,26 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
+  // Check for our custom sound data
+  const isAlarm = payload.data && payload.data.sound === 'alarm';
+
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/prc-logo.png' // The icon to display in the notification
+    icon: '/prc-logo.png', // The icon to display in the notification
+    // --- FINAL ENHANCEMENT: Make notification more persistent ---
+    requireInteraction: true, // Requires user to interact to dismiss
+    renotify: true,           // Notifies user even if a notification is already visible
+    tag: 'ems-alert'          // Groups notifications together
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  if (isAlarm) {
+    // This is a crude way to play a sound in a service worker.
+    // A more robust solution might use a dedicated audio file.
+    // NOTE: Autoplay policies might prevent this from working on all browsers/devices.
+    const audio = new Audio('/sounds/alarm.mp3'); // ASSUMES you have alarm.mp3 in /public/sounds/
+    audio.play().catch(e => console.error("Error playing sound:", e));
+  }
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });

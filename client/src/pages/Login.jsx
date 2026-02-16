@@ -25,7 +25,6 @@ const Login = () => {
     setIsSubmitting(true);
     setError(null);
     try {
-      // --- DEPLOYMENT FIX: Use the central API URL ---
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,6 +48,8 @@ const Login = () => {
       }
 
     } catch (err) {
+      // LOG THE FULL ERROR FOR DIAGNOSTICS
+      console.error('Login Error:', err);
       setError(err.message);
     } finally {
       setIsSubmitting(false);
