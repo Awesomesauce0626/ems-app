@@ -37,28 +37,20 @@ const httpServer = http.createServer(app);
 
 const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
 
-const whitelist = [
-  clientURL,
-  'http://localhost:5173',
-  'http://localhost',
-  'capacitor://localhost',
-  'https://localhost' // Critical for native Android CORS requests
-];
+// Standard CORS for HTTP requests
+app.use(cors({
+    origin: [clientURL, 'http://localhost:5173', 'capacitor://localhost', 'https://localhost', 'https://ems-app-phi.vercel.app'],
+    credentials: true
+}));
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || whitelist.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
-  },
-  credentials: true,
-};
+// Explicit CORS config for Socket.IO
+const io = new Server(httpServer, {
+  cors: {
+    origin: [clientURL, 'http://localhost:5173', 'capacitor://localhost', 'https://localhost', 'https://ems-app-phi.vercel.app'],
+    methods: ["GET", "POST"]
+  }
+});
 
-const io = new Server(httpServer, { cors: corsOptions });
-
-app.use(cors(corsOptions));
 app.use(express.json());
 app.use((req, res, next) => {
   req.io = io;
