@@ -11,12 +11,15 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction) {
   const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-  const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('ascii');
-  const serviceAccount = JSON.parse(serviceAccountJson);
-
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
+  if (serviceAccountBase64) {
+    const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('ascii');
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+  } else {
+    console.error('FIREBASE_SERVICE_ACCOUNT_BASE64 not found in environment variables.');
+  }
 } else {
   const serviceAccount = require('./firebase-service-account-key.json');
   admin.initializeApp({
@@ -28,7 +31,6 @@ const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
 const adminRoutes = require('./routes/admin');
 const reportRoutes = require('./routes/reports');
-const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -40,7 +42,7 @@ const whitelist = [
   'http://localhost:5173',
   'http://localhost',
   'capacitor://localhost',
-  'https://localhost' // Add this line for Capacitor Android
+  'https://localhost' // Critical for native Android CORS requests
 ];
 
 const corsOptions = {
@@ -51,7 +53,7 @@ const corsOptions = {
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
-  optionsSuccessStatus: 200,
+  credentials: true,
 };
 
 const io = new Server(httpServer, { cors: corsOptions });
@@ -67,15 +69,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/upload', uploadRoutes);
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'Backend is running' });
-});
 
 const responderLocations = new Map();
 
 io.on('connection', (socket) => {
-  console.log('a user connected:', socket.id);
+  console.log('A user connected:', socket.id);
 
   socket.on('ems-location-update', (data) => {
     responderLocations.set(socket.id, { ...data, id: socket.id });
@@ -85,21 +83,25 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     responderLocations.delete(socket.id);
     io.emit('ems-locations-broadcast', Array.from(responderLocations.values()));
+    console.log('User disconnected:', socket.id);
   });
 });
 
+if (isProduction) {
+    app.use(express.static(path.join(__dirname, 'client/dist')));
+    app.get('*' , (req,res) => {
+        res.sendFile(path.join(__dirname, "client/dist/index.html"));
+    })
+}
+
 const PORT = process.env.PORT || 5000;
-const HOST = '0.0.0.0';
 
 const startServer = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected successfully.');
-    httpServer.listen(PORT, HOST, () => {
-      console.log(`Server running on http://${HOST}:${PORT}`);
+    httpServer.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
     });
   } catch (err) {
     console.error('MongoDB connection error:', err);
