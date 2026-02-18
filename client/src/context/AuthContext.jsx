@@ -17,9 +17,11 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Failed to parse auth data from storage", error);
+      // If parsing fails, clear the stale data
       localStorage.removeItem('user');
       localStorage.removeItem('token');
     } finally {
+      // This is crucial: set loading to false only after checking storage
       setIsAuthLoading(false);
     }
   }, []);
@@ -38,10 +40,9 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
   };
 
-  // --- FINAL AND DEFINITIVE FIX: Add isAuthLoading to the context value ---
   const value = { user, token, login, logout, isAuthenticated: !!token, isAuthLoading };
 
-  // While the initial authentication check is running, you can render a loading indicator.
+  // While the initial authentication check is running, render a loading indicator.
   // This prevents the rest of the app from rendering with an incomplete auth state.
   if (isAuthLoading) {
     return <div>Loading Application...</div>;
