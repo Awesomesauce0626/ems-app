@@ -19,8 +19,7 @@ const incidentTypes = [
 ];
 
 const schema = z.object({
-  reporterName: z.string().min(1, 'Name is required'),
-  reporterPhone: z.string().min(1, 'Phone number is required'),
+  // Reporter name and phone are now handled by the parent dashboard
   address: z.string().min(1, 'Address / Location Description is required'),
   incidentType: z.string().min(1, 'Incident type is required'),
   description: z.string().optional(),
@@ -40,13 +39,16 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   const takePicture = async () => {
     try {
       const image = await Camera.getPhoto({
-        quality: 90,
+        quality: 90, // Keep JPEG quality high
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Prompt,
         promptLabelHeader: 'Select Image Source',
         promptLabelPhoto: 'From Gallery',
-        promptLabelPicture: 'Take a Picture'
+        promptLabelPicture: 'Take a Picture',
+        // Add these lines to resize the image
+        width: 1024,
+        height: 1024,
       });
       setImageData(image);
     } catch (error) {
@@ -55,6 +57,7 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   };
 
   const handleFormSubmit = (data) => {
+      // Pass both form data and image data to the parent
       onSubmit({ ...data, image: imageData });
   };
 
@@ -64,18 +67,6 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="alert-form">
-      <div className="form-group">
-        <label htmlFor="reporterName">Your Name</label>
-        <input id="reporterName" {...register('reporterName')} />
-        {errors.reporterName && <p className="error-message">{errors.reporterName.message}</p>}
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="reporterPhone">Your Phone Number</label>
-        <input id="reporterPhone" {...register('reporterPhone')} />
-        {errors.reporterPhone && <p className="error-message">{errors.reporterPhone.message}</p>}
-      </div>
-
       <div className="form-group">
         <label htmlFor="address">Address / Location Description</label>
         <textarea id="address" placeholder="e.g., In front of SM City Daet, Vinzons Ave" {...register('address')} />

@@ -58,22 +58,65 @@ const CitizenDashboard = () => {
     setLocation(newLocation);
   };
 
-  const handleAlertSubmit = async (data) => {
+  // This is the new, corrected alert submission handler
+  const handleAlertSubmit = async (formData) => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const alertData = { ...data, location, reporterName: `${user.firstName} ${user.lastName}`, reporterPhone: user.phoneNumber };
+      let imageUrl = null;
+
+      // Step 1: Check if an image was attached
+      if (formData.image) {
+        // Step 2: Get a secure upload signature from our backend
+        const signRes = await fetch(`${API_BASE_URL}/api/upload/sign`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!signRes.ok) throw new Error('Could not get upload signature from server');
+        const signData = await signRes.json();
+
+        // Step 3: Upload the image directly to Cloudinary
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', formData.image.dataUrl);
+        uploadFormData.append('api_key', signData.apikey);
+        uploadFormData.append('timestamp', signData.timestamp);
+        uploadFormData.append('signature', signData.signature);
+        uploadFormData.append('folder', 'incidents');
+
+        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloudname}/image/upload`;
+        const cloudinaryRes = await fetch(cloudinaryUrl, {
+          method: 'POST',
+          body: uploadFormData,
+        });
+        if (!cloudinaryRes.ok) throw new Error('Cloudinary upload failed');
+        const cloudinaryData = await cloudinaryRes.json();
+        imageUrl = cloudinaryData.secure_url;
+      }
+
+      // Step 4: Submit the alert with the image URL
+      const alertData = {
+        ...formData,
+        imageUrl,
+        location,
+        reporterName: `${user.firstName} ${user.lastName}`,
+        reporterPhone: user.phoneNumber,
+      };
+
       const res = await fetch(`${API_BASE_URL}/api/alerts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(alertData),
       });
+
       if (!res.ok) throw new Error('Failed to submit alert');
+
       const newAlert = await res.json();
       setAlerts(prev => [newAlert.alert, ...prev]);
       setIsModalOpen(false);
+
     } catch (err) {
+      console.error("Alert Submission Error:", err);
       setError(err.message);
     } finally {
       setIsSubmitting(false);
@@ -111,7 +154,6 @@ const CitizenDashboard = () => {
   return (
     <div className="citizen-dashboard">
       <header className="cd-header">
-        {/* --- UX ENHANCEMENT: Universal Home Button --- */}
         <Link to="/" className="header-logo-link">
             <img src="/prc-logo.png" alt="PRC Logo" />
             <span>PRC-CN EMS</span>
