@@ -19,7 +19,6 @@ const incidentTypes = [
 ];
 
 const schema = z.object({
-  // Reporter name and phone are now handled by the parent dashboard
   address: z.string().min(1, 'Address / Location Description is required'),
   incidentType: z.string().min(1, 'Incident type is required'),
   description: z.string().optional(),
@@ -57,7 +56,6 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   };
 
   const handleFormSubmit = (data) => {
-      // Pass both form data and image data to the parent
       onSubmit({ ...data, image: imageData });
   };
 

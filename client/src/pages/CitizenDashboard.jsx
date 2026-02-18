@@ -7,6 +7,19 @@ import LocationPickerMap from '../components/LocationPickerMap';
 import API_BASE_URL from '../api';
 import './CitizenDashboard.css';
 
+// Helper function to convert Data URL to Blob for upload
+const dataURLtoBlob = (dataurl) => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], {type:mime});
+}
+
 const CitizenDashboard = () => {
   const { user, token, logout } = useAuth();
   const [alerts, setAlerts] = useState([]);
@@ -58,7 +71,6 @@ const CitizenDashboard = () => {
     setLocation(newLocation);
   };
 
-  // This is the new, corrected alert submission handler
   const handleAlertSubmit = async (formData) => {
     setIsSubmitting(true);
     setError(null);
@@ -67,7 +79,7 @@ const CitizenDashboard = () => {
       let imageUrl = null;
 
       // Step 1: Check if an image was attached
-      if (formData.image) {
+      if (formData.image && formData.image.dataUrl) {
         // Step 2: Get a secure upload signature from our backend
         const signRes = await fetch(`${API_BASE_URL}/api/upload/sign`, {
           method: 'POST',
@@ -77,8 +89,9 @@ const CitizenDashboard = () => {
         const signData = await signRes.json();
 
         // Step 3: Upload the image directly to Cloudinary
+        const imageBlob = dataURLtoBlob(formData.image.dataUrl);
         const uploadFormData = new FormData();
-        uploadFormData.append('file', formData.image.dataUrl);
+        uploadFormData.append('file', imageBlob);
         uploadFormData.append('api_key', signData.apikey);
         uploadFormData.append('timestamp', signData.timestamp);
         uploadFormData.append('signature', signData.signature);
@@ -94,7 +107,7 @@ const CitizenDashboard = () => {
         imageUrl = cloudinaryData.secure_url;
       }
 
-      // Step 4: Submit the alert with the image URL
+      // Step 4: Submit the alert with the image URL and user info
       const alertData = {
         ...formData,
         imageUrl,
