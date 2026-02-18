@@ -1,25 +1,33 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../context/SocketContext';
 
-// A simple, web-only location tracking hook. THIS DOES NOT USE NATIVE PLUGINS.
 const useLocationTracking = (user) => {
-  const [isTracking, setIsTracking] = useState(false);
+  // Initialize state from localStorage or default to false
+  const [isTracking, setIsTracking] = useState(() => {
+    const savedIsTracking = localStorage.getItem('isTracking');
+    return savedIsTracking ? JSON.parse(savedIsTracking) : false;
+  });
+
   const socket = useSocket();
   const trackingIntervalRef = useRef(null);
 
   useEffect(() => {
+    // Save state to localStorage whenever it changes
+    localStorage.setItem('isTracking', JSON.stringify(isTracking));
+
     if (isTracking) {
       if (!navigator.geolocation || !socket) {
         return;
       }
       sendLocation();
-      trackingIntervalRef.current = setInterval(sendLocation, 15000);
+      trackingIntervalRef.current = setInterval(sendLocation, 15000); // 15 seconds
     } else {
       if (trackingIntervalRef.current) {
         clearInterval(trackingIntervalRef.current);
       }
     }
 
+    // Cleanup function to clear interval on component unmount or when tracking stops
     return () => {
       if (trackingIntervalRef.current) {
         clearInterval(trackingIntervalRef.current);
@@ -33,7 +41,7 @@ const useLocationTracking = (user) => {
   const sendLocation = () => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        if (!user) return;
+        if (!user || !socket?.connected) return;
         const { latitude, longitude } = position.coords;
         const locationData = {
           user: {
@@ -45,9 +53,7 @@ const useLocationTracking = (user) => {
             lng: longitude,
           },
         };
-        if (socket?.connected) {
-          socket.emit('ems-location-update', locationData);
-        }
+        socket.emit('ems-location-update', locationData);
       },
       (err) => {
         console.error('Could not get location:', err.message);
