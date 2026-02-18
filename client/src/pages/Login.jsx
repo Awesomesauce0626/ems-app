@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Import useEffect
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,9 +17,22 @@ const Login = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { register, handleSubmit, formState: { errors } } = useForm({
+
+  // Get the default email from localStorage
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm({
     resolver: zodResolver(schema),
+    defaultValues: {
+      email: localStorage.getItem('lastUserEmail') || ''
+    }
   });
+
+  // Pre-fill the email field when the component mounts
+  useEffect(() => {
+    const lastEmail = localStorage.getItem('lastUserEmail');
+    if (lastEmail) {
+      setValue('email', lastEmail);
+    }
+  }, [setValue]);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
@@ -32,20 +45,20 @@ const Login = () => {
       });
 
       if (!res.ok) {
-        // Handle non-JSON error responses gracefully
         const errorText = await res.text();
         try {
             const errorData = JSON.parse(errorText);
             throw new Error(errorData.message || 'Failed to login');
         } catch (jsonError) {
-            // If parsing fails, the error response was not JSON.
-            // Throw the raw text as the error.
             throw new Error(errorText || `HTTP error! status: ${res.status}`);
         }
       }
 
       const { user, token } = await res.json();
       login(user, token);
+
+      // Save email after successful login
+      localStorage.setItem('lastUserEmail', user.email);
 
       if (user.role === 'admin') {
         navigate('/dashboard/admin');
