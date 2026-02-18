@@ -54,23 +54,36 @@ router.post('/', auth, async (req, res) => {
     const tokens = staffUsers.flatMap(user => user.fcmTokens);
 
     if (tokens.length > 0) {
-        // --- FINAL ENHANCEMENT: Add a 'data' payload to ensure the service is always woken up ---
         const message = {
             notification: {
                 title: 'New Emergency Alert!',
                 body: `Incident: ${incidentType} at ${address}`,
             },
-            data: {
-                title: 'New Emergency Alert!',
-                body: `Incident: ${incidentType} at ${address}`,
-                sound: 'alarm' // Custom data to identify the sound
-            },
             tokens: tokens,
+            // Add critical alert flags for Android and iOS
+            android: {
+                priority: 'high',
+                notification: {
+                    sound: 'default', // Use the default notification sound
+                    channelId: 'ems_alerts', // Specify a channel for high-priority alerts
+                },
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: {
+                            critical: 1,
+                            name: 'default',
+                            volume: 1.0,
+                        },
+                    },
+                },
+            },
         };
 
         try {
             await admin.messaging().sendMulticast(message);
-            console.log('Push notifications sent successfully.');
+            console.log('Critical push notifications sent successfully.');
         } catch (error) {
             console.error('Error sending push notifications:', error);
         }
