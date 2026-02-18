@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AlertForm from '../components/AlertForm';
 import LocationPickerMap from '../components/LocationPickerMap';
 import API_BASE_URL from '../api';
-import '../components/AlertForm.css';
+import '../components/AlertForm.css'; // Re-use styles
 import './QuickAccessForm.css';
 
 const EMERGENCY_HOTLINE = '09477357651';
@@ -29,6 +29,10 @@ const QuickAccessForm = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [formData, setFormData] = useState(null);
+
+  // Add state for the new fields
+  const [reporterName, setReporterName] = useState('');
+  const [reporterPhone, setReporterPhone] = useState('');
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -61,9 +65,13 @@ const QuickAccessForm = () => {
     setLocation(newLocation);
   };
 
-  const onSubmit = async (data) => {
+  // The onSubmit function now receives data from the child AlertForm
+  const onSubmit = async (alertFormData) => {
+    // Combine data from the child form with data from this form
+    const combinedData = { ...alertFormData, reporterName, reporterPhone };
+
     if (isOffline) {
-        setFormData(data);
+        setFormData(combinedData);
         return;
     }
 
@@ -74,24 +82,23 @@ const QuickAccessForm = () => {
       const quickAccessRes = await fetch(`${API_BASE_URL}/api/auth/quick-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reporterName: data.reporterName, reporterPhone: data.reporterPhone }),
+        // Use the name and phone from this form's state
+        body: JSON.stringify({ reporterName, reporterPhone }),
       });
 
       if (!quickAccessRes.ok) throw new Error('Failed to get quick access token');
       const { token } = await quickAccessRes.json();
 
       let imageUrl = null;
-      if (data.image) {
+      if (combinedData.image) {
         const signRes = await fetch(`${API_BASE_URL}/api/upload/sign`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!signRes.ok) throw new Error('Could not get upload signature from server.');
         const signData = await signRes.json();
 
-        const imageBlob = dataURLtoBlob(data.image.dataUrl);
+        const imageBlob = dataURLtoBlob(combinedData.image.dataUrl);
         const uploadFormData = new FormData();
         uploadFormData.append('file', imageBlob);
         uploadFormData.append('api_key', signData.apikey);
@@ -110,7 +117,7 @@ const QuickAccessForm = () => {
         imageUrl = uploadResult.secure_url;
       }
 
-      const alertData = { ...data, location, imageUrl };
+      const alertData = { ...combinedData, location, imageUrl };
 
       const alertRes = await fetch(`${API_BASE_URL}/api/alerts`, {
         method: 'POST',
@@ -185,6 +192,19 @@ const QuickAccessForm = () => {
         {locationError && <p className="location-error">{locationError}</p>}
 
         <div className="form-wrapper">
+            {/* Add the Name and Phone fields here */}
+            <div className="alert-form">
+              <div className="form-group">
+                <label htmlFor="reporterName">Your Name</label>
+                <input id="reporterName" value={reporterName} onChange={(e) => setReporterName(e.target.value)} required />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="reporterPhone">Your Phone Number</label>
+                <input id="reporterPhone" value={reporterPhone} onChange={(e) => setReporterPhone(e.target.value)} required />
+              </div>
+            </div>
+
             <AlertForm onSubmit={onSubmit} isSubmitting={isSubmitting} />
             {error && <p className="submission-error">{error}</p>}
         </div>
