@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/|assets/|vite.svg|prc-logo.png|index.html|firebase-messaging-sw.js|alarm.mp3|cordova.js|cordova_plugins.js|native-bridge.js).*)", "destination": "/index.html" }
   ]
 }
