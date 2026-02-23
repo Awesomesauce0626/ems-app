@@ -1,6 +1,15 @@
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT) // Allow project-specific repos as required by this hybrid project's dependencies
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
 include ':app'
 include ':capacitor-camera'
 include ':capacitor-cordova-android-plugins'

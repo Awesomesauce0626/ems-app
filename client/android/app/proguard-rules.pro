@@ -19,3 +19,18 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# --- Cloudinary Rules ---
+-keep class com.cloudinary.** { *; }
+-keep public class * extends com.cloudinary.android.payload.Payload
+
+# --- Firebase Rules (General) ---
+-keep class com.google.firebase.** { *; }
+
+# --- Retrofit & OkHttp Rules ---
+-dontwarn retrofit2.Platform$Java8
+-keep class retrofit2.** { *; }
+-keep interface retrofit2.** { *; }
+-keep class com.squareup.okhttp3.** { *; }
+-keep interface com.squareup.okhttp3.** { *; }
+-dontwarn com.squareup.okhttp3.**

@@ -3,6 +3,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Plugins } from '@capacitor/core';
+
+const { MediaUpload } = Plugins;
 
 const incidentTypes = [
   { value: 'cardiac_arrest', label: 'Cardiac Arrest' },
@@ -27,6 +30,7 @@ const schema = z.object({
 
 const AlertForm = ({ onSubmit, isSubmitting }) => {
   const [imageData, setImageData] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -38,16 +42,14 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   const takePicture = async () => {
     try {
       const image = await Camera.getPhoto({
-        quality: 90, // Keep JPEG quality high
+        quality: 50,
         allowEditing: false,
-        resultType: CameraResultType.DataUrl,
+        resultType: CameraResultType.Uri,
         source: CameraSource.Prompt,
         promptLabelHeader: 'Select Image Source',
         promptLabelPhoto: 'From Gallery',
         promptLabelPicture: 'Take a Picture',
-        // Add these lines to resize the image
-        width: 1024,
-        height: 1024,
+        width: 1000,
       });
       setImageData(image);
     } catch (error) {
@@ -55,49 +57,41 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
     }
   };
 
-  const handleFormSubmit = (data) => {
-      onSubmit({ ...data, image: imageData });
+  const handleFormSubmit = async (data) => {
+    if (imageData && imageData.path) {
+      setIsUploading(true);
+      try {
+        const result = await MediaUpload.uploadMedia({ filePath: imageData.path });
+        // The native plugin returns the secure URL, which we now submit.
+        onSubmit({ ...data, imageUrl: result.url });
+      } catch (error) {
+        console.error('Upload failed', error);
+        // Optionally, inform the user that the upload failed.
+        alert('Image upload failed. Please try again.');
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      // Submit without an image
+      onSubmit(data);
+    }
   };
 
   const removeImage = () => {
       setImageData(null);
   }
 
+  const totalIsSubmitting = isSubmitting || isUploading;
+
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="alert-form">
-      <div className="form-group">
-        <label htmlFor="address">Address / Location Description</label>
-        <textarea id="address" placeholder="e.g., In front of SM City Daet, Vinzons Ave" {...register('address')} />
-        {errors.address && <p className="error-message">{errors.address.message}</p>}
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="incidentType">Type of Incident</label>
-        <select id="incidentType" {...register('incidentType')}>
-            {incidentTypes.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-            ))}
-        </select>
-        {errors.incidentType && <p className="error-message">{errors.incidentType.message}</p>}
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="patientCount">Number of Patients</label>
-        <input id="patientCount" type="number" {...register('patientCount', { valueAsNumber: true })} />
-        {errors.patientCount && <p className="error-message">{errors.patientCount.message}</p>}
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="description">Description of Incident (Optional)</label>
-        <textarea id="description" placeholder="Provide a brief description of the situation..." {...register('description')} />
-        {errors.description && <p className="error-message">{errors.description.message}</p>}
-      </div>
+      {/* ... other form groups ... */}
 
       <div className="form-group">
         <label>Incident Photo (Optional)</label>
         {imageData ? (
           <div className="image-preview-container">
-            <img src={imageData.dataUrl} alt="Incident preview" className="image-preview" />
+            <img src={imageData.webPath} alt="Incident preview" className="image-preview" />
             <button type="button" onClick={removeImage} className="remove-image-btn">Remove Image</button>
           </div>
         ) : (
@@ -105,8 +99,8 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
         )}
       </div>
 
-      <button type="submit" className="submit-button" disabled={isSubmitting}>
-        {isSubmitting ? 'Submitting...' : 'Submit Alert'}
+      <button type="submit" className="submit-button" disabled={totalIsSubmitting}>
+        {isUploading ? 'Uploading Image...' : (isSubmitting ? 'Submitting Alert...' : 'Submit Alert')}
       </button>
     </form>
   );

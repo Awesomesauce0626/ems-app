@@ -1,5 +1,21 @@
 apply plugin: 'com.android.application'
 
+// Define a task to copy web assets from the /dist folder to the Android assets folder.
+task copyWebApp(type: Copy) {
+    from "../../dist"
+    into "src/main/assets/public"
+    doFirst {
+        println ">>> EXECUTING copyWebApp: Copying web app files..."
+    }
+}
+
+// It makes the standard asset and lint tasks dependent on our copy task.
+tasks.whenTaskAdded {
+    if (it.name == 'mergeReleaseAssets' || it.name == 'lintVitalAnalyzeRelease' || it.name == 'generateReleaseLintVitalReportModel') {
+        it.dependsOn copyWebApp
+    }
+}
+
 android {
     // This block is now outside the main android { ... } block to be globally available
 }
@@ -8,7 +24,7 @@ android {
 android {
     signingConfigs {
         release {
-            storeFile file('../../../upload-key.jks') // Use the new upload keystore
+            storeFile file('../../../new-upload-key.jks') // Use the new upload keystore
             storePassword SIGNING_STORE_PASSWORD
             keyAlias SIGNING_KEY_ALIAS
             keyPassword SIGNING_KEY_PASSWORD
@@ -21,8 +37,8 @@ android {
         applicationId "com.prc_ems.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        versionName "1.12"
+        versionCode 15
+        versionName "1.15"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
@@ -37,11 +53,7 @@ android {
     }
 }
 
-repositories {
-    flatDir{
-        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
-    }
-}
+// Repositories are now managed in settings.gradle
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
@@ -53,6 +65,21 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // Firebase (Auth & Firestore)
+    implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // Maps (OpenStreetMap - No Credit Card Needed!)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+
+    // Cloudinary for Photos/Videos
+    // implementation("com.cloudinary:cloudinary-android:3.0.0")
+
+    // Retrofit for API calls
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 }
 
 apply from: 'capacitor.build.gradle'
