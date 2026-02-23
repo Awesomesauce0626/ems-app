@@ -34,3 +34,9 @@
 -keep class com.squareup.okhttp3.** { *; }
 -keep interface com.squareup.okhttp3.** { *; }
 -dontwarn com.squareup.okhttp3.**
+
+# --- Capacitor Rules ---
+-keep class com.getcapacitor.** { *; }
+
+# --- Application Rules ---
+-keep class com.prc_ems.app.MainApplication { *; }

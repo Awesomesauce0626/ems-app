@@ -16,11 +16,13 @@ tasks.whenTaskAdded {
     }
 }
 
-android {
-    // This block is now outside the main android { ... } block to be globally available
+def localProperties = new Properties()
+try {
+    localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+} catch (IOException e) {
+    // local.properties not found, reasonable in CI environments
 }
 
-// Define signing configuration block at the top level
 android {
     signingConfigs {
         release {
@@ -37,12 +39,17 @@ android {
         applicationId "com.prc_ems.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 15
-        versionName "1.15"
+        versionCode 18
+        versionName "1.18"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
+        multiDexEnabled true
+
+        buildConfigField "String", "CLOUDINARY_CLOUD_NAME", "\"${localProperties.getProperty('cloudinaryCloudName', '')}\""
+        buildConfigField "String", "CLOUDINARY_API_KEY", "\"${localProperties.getProperty('cloudinaryApiKey', '')}\""
+        buildConfigField "String", "CLOUDINARY_API_SECRET", "\"${localProperties.getProperty('cloudinaryApiSecret', '')}\""
     }
     buildTypes {
         release {
@@ -50,6 +57,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release // Apply the release signing config
         }
+    }
+    buildFeatures {
+        buildConfig true
     }
 }
 
@@ -65,6 +75,8 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    implementation "androidx.multidex:multidex:2.0.1"
 
     // Firebase (Auth & Firestore)
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
