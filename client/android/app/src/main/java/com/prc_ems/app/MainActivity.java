@@ -32,7 +32,7 @@ public class MainActivity extends BridgeActivity {
             AudioAttributes attributes = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
                     .build();
-            
+
             Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.alarm);
             channel.setSound(soundUri, attributes);
 

@@ -40,3 +40,4 @@
 
 # --- Application Rules ---
 -keep class com.prc_ems.app.MainApplication { *; }
+-keep public class * extends android.app.Application

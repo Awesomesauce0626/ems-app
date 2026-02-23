@@ -1,0 +1,4 @@
+com/prc_ems/app/MainApplication.class
+com/getcapacitor/BridgeApplication.class
+androidx/multidex/MultiDex.class
+androidx/multidex/MultiDexApplication.class

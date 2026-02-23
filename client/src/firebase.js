@@ -1,7 +1,6 @@
 // --- PUSH NOTIFICATIONS: Frontend Firebase Configuration ---
 
 import { initializeApp } from 'firebase/app';
-import { getMessaging } from 'firebase/messaging';
 
 // IMPORTANT: Replace this with the actual firebaseConfig object from your Firebase project settings
 const firebaseConfig = {
@@ -15,6 +14,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
 
-export { messaging };
+// Export only the core app instance. The Capacitor plugin will handle messaging.
+export { app };
