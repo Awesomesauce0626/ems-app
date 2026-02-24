@@ -64,7 +64,6 @@ router.post('/', auth, async (req, res) => {
             android: {
                 priority: 'high',
                 notification: {
-                    sound: 'default', // Use the default notification sound
                     channelId: 'ems_alerts', // Specify a channel for high-priority alerts
                 },
             },
