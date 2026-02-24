@@ -31,22 +31,22 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-        patientCount: 1,
-        incidentType: incidentTypes[0].value,
+      patientCount: 1,
+      incidentType: incidentTypes[0].value,
     }
   });
 
   const takePicture = async () => {
     try {
       const image = await Camera.getPhoto({
-        quality: 40, // Reduced quality for smaller file size
+        quality: 40,
         allowEditing: false,
         resultType: CameraResultType.Base64,
         source: CameraSource.Prompt,
         promptLabelHeader: 'Select Image Source',
         promptLabelPhoto: 'From Gallery',
         promptLabelPicture: 'Take a Picture',
-        width: 800, // Reduced width for smaller file size
+        width: 800,
       });
       setImageData(image);
     } catch (error) {
@@ -59,19 +59,19 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
     if (imageData && imageData.base64String) {
       setIsUploading(true);
       try {
-        const response = await fetch('https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload', { // <-- IMPORTANT: REPLACE WITH YOUR CLOUD NAME
+        const formData = new FormData();
+        formData.append('file', `data:image/${imageData.format};base64,${imageData.base64String}`);
+        formData.append('upload_preset', 'prc-ems-app');
+
+        const response = await fetch('https://api.cloudinary.com/v1_1/dbihhzu5y/image/upload', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            file: `data:image/${imageData.format};base64,${imageData.base64String}`,
-            upload_preset: 'YOUR_UPLOAD_PRESET', // <-- IMPORTANT: REPLACE WITH YOUR UPLOAD PRESET
-          }),
+          body: formData,
         });
 
         const uploadResult = await response.json();
 
         if (!uploadResult.secure_url) {
-          throw new Error('Image upload failed, no secure URL returned.')
+          throw new Error('Image upload failed, no secure URL returned.');
         }
         imageUrl = uploadResult.secure_url;
 
@@ -88,8 +88,8 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   };
 
   const removeImage = () => {
-      setImageData(null);
-  }
+    setImageData(null);
+  };
 
   const totalIsSubmitting = isSubmitting || isUploading;
 
