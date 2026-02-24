@@ -55,6 +55,7 @@ const EMSDashboard = () => {
     alarmSound.play().then(() => alarmSound.pause());
 
     const handleNewAlert = (newAlert) => {
+      console.log('New Alert Received:', newAlert); // Log the alert data
       setAlerts((prevAlerts) => [newAlert, ...prevAlerts]);
       alarmSound.play().catch(e => console.error("Error playing sound:", e));
     };
