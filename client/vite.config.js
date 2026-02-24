@@ -4,12 +4,11 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  root: './', // Explicitly set the project root
+  root: './',
   build: {
     outDir: 'dist',
     rollupOptions: {
-      input: './index.html', // Explicitly set the entry point
-      external: ['@capacitor-community/background-geolocation'],
+      input: './index.html',
     },
   },
   server: {

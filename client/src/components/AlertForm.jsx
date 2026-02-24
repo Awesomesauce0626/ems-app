@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import API_BASE_URL from '../api';
 
 const incidentTypes = [
   { value: 'cardiac_arrest', label: 'Cardiac Arrest' },
@@ -32,22 +31,22 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      patientCount: 1,
-      incidentType: incidentTypes[0].value,
+        patientCount: 1,
+        incidentType: incidentTypes[0].value,
     }
   });
 
   const takePicture = async () => {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 40, // Reduced quality for smaller file size
         allowEditing: false,
-        resultType: CameraResultType.Base64, // Use Base64 for easier upload
+        resultType: CameraResultType.Base64,
         source: CameraSource.Prompt,
         promptLabelHeader: 'Select Image Source',
         promptLabelPhoto: 'From Gallery',
         promptLabelPicture: 'Take a Picture',
-        width: 1000,
+        width: 800, // Reduced width for smaller file size
       });
       setImageData(image);
     } catch (error) {
@@ -60,26 +59,17 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
     if (imageData && imageData.base64String) {
       setIsUploading(true);
       try {
-        // Create a blob from the base64 data
-        const byteCharacters = atob(imageData.base64String);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: imageData.format === 'png' ? 'image/png' : 'image/jpeg' });
-
-        // Use FormData to send the file
-        const formData = new FormData();
-        formData.append('file', blob);
-        formData.append('upload_preset', 'your_cloudinary_upload_preset'); // Replace with your upload preset
-
-        const response = await fetch('https://api.cloudinary.com/v1_1/your_cloud_name/image/upload', { // Replace with your cloud name
+        const response = await fetch('https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload', { // <-- IMPORTANT: REPLACE WITH YOUR CLOUD NAME
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file: `data:image/${imageData.format};base64,${imageData.base64String}`,
+            upload_preset: 'YOUR_UPLOAD_PRESET', // <-- IMPORTANT: REPLACE WITH YOUR UPLOAD PRESET
+          }),
         });
 
         const uploadResult = await response.json();
+
         if (!uploadResult.secure_url) {
           throw new Error('Image upload failed, no secure URL returned.')
         }
@@ -98,8 +88,8 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   };
 
   const removeImage = () => {
-    setImageData(null);
-  };
+      setImageData(null);
+  }
 
   const totalIsSubmitting = isSubmitting || isUploading;
 
