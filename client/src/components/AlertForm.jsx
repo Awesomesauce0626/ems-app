@@ -3,9 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Plugins } from '@capacitor/core';
-
-const { MediaUpload } = Plugins;
+import API_BASE_URL from '../api';
 
 const incidentTypes = [
   { value: 'cardiac_arrest', label: 'Cardiac Arrest' },
@@ -34,8 +32,8 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-        patientCount: 1,
-        incidentType: incidentTypes[0].value,
+      patientCount: 1,
+      incidentType: incidentTypes[0].value,
     }
   });
 
@@ -44,7 +42,7 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
       const image = await Camera.getPhoto({
         quality: 50,
         allowEditing: false,
-        resultType: CameraResultType.Uri,
+        resultType: CameraResultType.Base64, // Use Base64 for easier upload
         source: CameraSource.Prompt,
         promptLabelHeader: 'Select Image Source',
         promptLabelPhoto: 'From Gallery',
@@ -58,40 +56,87 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   };
 
   const handleFormSubmit = async (data) => {
-    if (imageData && imageData.path) {
+    let imageUrl = null;
+    if (imageData && imageData.base64String) {
       setIsUploading(true);
       try {
-        const result = await MediaUpload.uploadMedia({ filePath: imageData.path });
-        // The native plugin returns the secure URL, which we now submit.
-        onSubmit({ ...data, imageUrl: result.url });
+        // Create a blob from the base64 data
+        const byteCharacters = atob(imageData.base64String);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: imageData.format === 'png' ? 'image/png' : 'image/jpeg' });
+
+        // Use FormData to send the file
+        const formData = new FormData();
+        formData.append('file', blob);
+        formData.append('upload_preset', 'your_cloudinary_upload_preset'); // Replace with your upload preset
+
+        const response = await fetch('https://api.cloudinary.com/v1_1/your_cloud_name/image/upload', { // Replace with your cloud name
+          method: 'POST',
+          body: formData,
+        });
+
+        const uploadResult = await response.json();
+        if (!uploadResult.secure_url) {
+          throw new Error('Image upload failed, no secure URL returned.')
+        }
+        imageUrl = uploadResult.secure_url;
+
       } catch (error) {
         console.error('Upload failed', error);
-        // Optionally, inform the user that the upload failed.
         alert('Image upload failed. Please try again.');
+        setIsUploading(false);
+        return; // Stop submission if upload fails
       } finally {
         setIsUploading(false);
       }
-    } else {
-      // Submit without an image
-      onSubmit(data);
     }
+    onSubmit({ ...data, imageUrl });
   };
 
   const removeImage = () => {
-      setImageData(null);
-  }
+    setImageData(null);
+  };
 
   const totalIsSubmitting = isSubmitting || isUploading;
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="alert-form">
-      {/* ... other form groups ... */}
+      <div className="form-group">
+        <label htmlFor="incidentType">Type of Incident</label>
+        <select id="incidentType" {...register('incidentType')}>
+          {incidentTypes.map(type => (
+            <option key={type.value} value={type.value}>{type.label}</option>
+          ))}
+        </select>
+        {errors.incidentType && <p className="error-message">{errors.incidentType.message}</p>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="address">Address / Location Description</label>
+        <textarea id="address" {...register('address')} />
+        {errors.address && <p className="error-message">{errors.address.message}</p>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="description">Additional Details (Optional)</label>
+        <textarea id="description" {...register('description')} />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="patientCount">Number of Patients</label>
+        <input id="patientCount" type="number" {...register('patientCount', { valueAsNumber: true })} />
+        {errors.patientCount && <p className="error-message">{errors.patientCount.message}</p>}
+      </div>
 
       <div className="form-group">
         <label>Incident Photo (Optional)</label>
         {imageData ? (
           <div className="image-preview-container">
-            <img src={imageData.webPath} alt="Incident preview" className="image-preview" />
+            <img src={`data:image/${imageData.format};base64,${imageData.base64String}`} alt="Incident preview" className="image-preview" />
             <button type="button" onClick={removeImage} className="remove-image-btn">Remove Image</button>
           </div>
         ) : (
