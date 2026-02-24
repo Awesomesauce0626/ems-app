@@ -18,12 +18,10 @@ const EMSDashboard = () => {
   const navigate = useNavigate();
 
   const { requestPermissionAndGetToken, notificationStatus } = usePushNotifications(token);
-  // --- REFACTOR: isTracking now controls everything ---
   const { isTracking, startTracking, stopTracking } = useLocationTracking(user);
 
   const alarmSound = useMemo(() => new Audio('/alarm.mp3'), []);
 
-  // Initial fetch for alerts
   useEffect(() => {
     if (token) {
       const fetchAlerts = async () => {
@@ -51,11 +49,9 @@ const EMSDashboard = () => {
     }
   }, [token]);
 
-  // --- REFACTOR: All socket listeners are now controlled by isTracking ('On Duty') state ---
   useEffect(() => {
     if (!socket || !isTracking) return;
 
-    // Unlock audio on first interaction
     alarmSound.play().then(() => alarmSound.pause());
 
     const handleNewAlert = (newAlert) => {
@@ -123,7 +119,6 @@ const EMSDashboard = () => {
 
       {error && <div className="dashboard-error">Error: {error}</div>}
 
-      {/* --- REFACTOR: Notification prompt is always visible if not granted -- */}
       {notificationStatus !== 'granted' && (
         <div className="notification-prompt">
           <p>You must enable push notifications to go on duty.</p>
@@ -131,7 +126,6 @@ const EMSDashboard = () => {
         </div>
       )}
 
-      {/* --- REFACTOR: No more monitoring gate, content is always visible --- */}
       <div className="dashboard-content">
           <div className="alerts-list-panel">
               <h2 className="panel-header">Incoming Alerts ({alerts.length})</h2>
@@ -146,6 +140,11 @@ const EMSDashboard = () => {
                           </div>
                           <div className="alert-item-body">
                               <p><strong>Reporter:</strong> {alert.reporterName}</p>
+                              {alert.imageUrl && (
+                                <div className="alert-image-container">
+                                  <img src={alert.imageUrl} alt="Incident" className="alert-image" />
+                                </div>
+                              )}
                           </div>
                           <div className="alert-item-footer">
                               <small>{new Date(alert.createdAt).toLocaleString()}</small>

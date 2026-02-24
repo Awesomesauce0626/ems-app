@@ -39,14 +39,14 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   const takePicture = async () => {
     try {
       const image = await Camera.getPhoto({
-        quality: 40,
+        quality: 30, // Further reduced quality
         allowEditing: false,
         resultType: CameraResultType.Base64,
         source: CameraSource.Prompt,
         promptLabelHeader: 'Select Image Source',
         promptLabelPhoto: 'From Gallery',
         promptLabelPicture: 'Take a Picture',
-        width: 800,
+        width: 600, // Further reduced width
       });
       setImageData(image);
     } catch (error) {
