@@ -1,68 +1,93 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Geolocation } from '@capacitor/geolocation';
 import { useSocket } from '../context/SocketContext';
 
 const useLocationTracking = (user) => {
-  // Initialize state from localStorage or default to false
   const [isTracking, setIsTracking] = useState(() => {
-    const savedIsTracking = localStorage.getItem('isTracking');
-    return savedIsTracking ? JSON.parse(savedIsTracking) : false;
+    // Initialize state from localStorage
+    return localStorage.getItem('isTracking') === 'true';
   });
-
+  const [error, setError] = useState(null);
+  const watchId = useRef(null);
   const socket = useSocket();
-  const trackingIntervalRef = useRef(null);
 
-  useEffect(() => {
-    // Save state to localStorage whenever it changes
-    localStorage.setItem('isTracking', JSON.stringify(isTracking));
+  const sendLocation = useCallback(async () => {
+    if (!socket || !user) return;
 
-    if (isTracking) {
-      if (!navigator.geolocation || !socket) {
-        return;
-      }
-      sendLocation();
-      trackingIntervalRef.current = setInterval(sendLocation, 15000); // 15 seconds
-    } else {
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
-      }
+    try {
+      const position = await Geolocation.getCurrentPosition();
+      const { latitude, longitude } = position.coords;
+      const locationData = { userId: user._id, lat: latitude, lng: longitude };
+      socket.emit('ems-location-update', locationData);
+    } catch (e) {
+      setError(e.message);
+      console.error('Error getting location for sending:', e);
     }
+  }, [socket, user]);
 
-    // Cleanup function to clear interval on component unmount or when tracking stops
+  const startTracking = useCallback(async () => {
+    if (watchId.current !== null) return; // Already tracking
+
+    try {
+      const permissions = await Geolocation.requestPermissions();
+      if (permissions.location !== 'granted') {
+        throw new Error('Location permission not granted.');
+      }
+
+      setIsTracking(true);
+      localStorage.setItem('isTracking', 'true');
+      sendLocation(); // Send initial location immediately
+
+      watchId.current = await Geolocation.watchPosition(
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 5000,
+        },
+        (position, err) => {
+          if (err) {
+            setError(err.message);
+            console.error('Error watching position:', err);
+            return;
+          }
+          if (socket && user && position) {
+            const { latitude, longitude } = position.coords;
+            socket.emit('ems-location-update', { userId: user._id, lat: latitude, lng: longitude });
+          }
+        }
+      );
+    } catch (e) {
+      setError(e.message);
+      console.error('Could not start location tracking:', e);
+    }
+  }, [sendLocation, socket, user]);
+
+  const stopTracking = useCallback(async () => {
+    if (watchId.current !== null) {
+      await Geolocation.clearWatch({ id: watchId.current });
+      watchId.current = null;
+    }
+    setIsTracking(false);
+    localStorage.setItem('isTracking', 'false');
+    if (socket && user) {
+      socket.emit('ems-go-off-duty', { userId: user._id });
+    }
+  }, [socket, user]);
+
+  // This effect will run once on component mount and handle the initial state.
+  useEffect(() => {
+    if (isTracking) {
+      startTracking();
+    }
+    // This cleanup is important for when the component unmounts.
     return () => {
-      if (trackingIntervalRef.current) {
-        clearInterval(trackingIntervalRef.current);
+      if (watchId.current !== null) {
+        Geolocation.clearWatch({ id: watchId.current });
       }
     };
-  }, [isTracking, socket, user]);
+  }, [isTracking, startTracking]);
 
-  const startTracking = () => setIsTracking(true);
-  const stopTracking = () => setIsTracking(false);
-
-  const sendLocation = () => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (!user || !socket?.connected) return;
-        const { latitude, longitude } = position.coords;
-        const locationData = {
-          user: {
-            id: user.id,
-            name: `${user.firstName} ${user.lastName}`,
-          },
-          location: {
-            lat: latitude,
-            lng: longitude,
-          },
-        };
-        socket.emit('ems-location-update', locationData);
-      },
-      (err) => {
-        console.error('Could not get location:', err.message);
-      },
-      { enableHighAccuracy: true }
-    );
-  };
-
-  return { isTracking, startTracking, stopTracking };
+  return { isTracking, error, startTracking, stopTracking };
 };
 
 export default useLocationTracking;

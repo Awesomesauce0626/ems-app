@@ -39,14 +39,14 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
   const takePicture = async () => {
     try {
       const image = await Camera.getPhoto({
-        quality: 30, // Further reduced quality
+        quality: 30,
         allowEditing: false,
         resultType: CameraResultType.Base64,
         source: CameraSource.Prompt,
         promptLabelHeader: 'Select Image Source',
         promptLabelPhoto: 'From Gallery',
         promptLabelPicture: 'Take a Picture',
-        width: 600, // Further reduced width
+        width: 600,
       });
       setImageData(image);
     } catch (error) {
@@ -61,9 +61,9 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
       try {
         const formData = new FormData();
         formData.append('file', `data:image/${imageData.format};base64,${imageData.base64String}`);
-        formData.append('upload_preset', 'prc-ems-app');
+        formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
 
-        const response = await fetch('https://api.cloudinary.com/v1_1/dbihhzu5y/image/upload', {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, {
           method: 'POST',
           body: formData,
         });
@@ -79,7 +79,7 @@ const AlertForm = ({ onSubmit, isSubmitting }) => {
         console.error('Upload failed', error);
         alert('Image upload failed. Please try again.');
         setIsUploading(false);
-        return; // Stop submission if upload fails
+        return;
       } finally {
         setIsUploading(false);
       }
