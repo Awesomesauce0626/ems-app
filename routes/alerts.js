@@ -60,11 +60,10 @@ router.post('/', auth, async (req, res) => {
                 body: `Incident: ${incidentType} at ${address}`,
             },
             tokens: tokens,
-            // Add critical alert flags for Android and iOS
             android: {
                 priority: 'high',
                 notification: {
-                    channelId: 'ems_alerts', // Specify a channel for high-priority alerts
+                    channelId: 'ems_alerts',
                 },
             },
             apns: {
@@ -94,59 +93,6 @@ router.post('/', auth, async (req, res) => {
     });
   } catch (error) {
     console.error("Alert Creation Error:", error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
-
-router.get('/completed', auth, async (req, res) => {
-    try {
-        const completedAlerts = await CompletedAlert.find()
-            .populate('userId', 'email firstName lastName')
-            .populate('assignedEMS', 'email firstName lastName phoneNumber')
-            .sort({ archivedAt: -1 });
-        res.json(completedAlerts);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-});
-
-router.delete('/completed/:id', auth, async (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Forbidden: Only admins can delete archived alerts.' });
-    }
-    try {
-        await CompletedAlert.findByIdAndDelete(req.params.id);
-        res.status(200).json({ message: 'Archived alert deleted successfully.' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-});
-
-router.get('/', auth, async (req, res) => {
-  try {
-    const alerts = await Alert.find()
-      .populate('userId', 'email firstName lastName')
-      .populate('assignedEMS', 'email firstName lastName phoneNumber')
-      .sort({ createdAt: -1 });
-
-    res.json(alerts);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
-
-router.get('/:id', auth, async (req, res) => {
-  try {
-    const alert = await Alert.findById(req.params.id)
-      .populate('userId', 'email firstName lastName')
-      .populate('assignedEMS', 'email firstName lastName phoneNumber');
-
-    if (!alert) {
-      return res.status(404).json({ message: 'Alert not found' });
-    }
-
-    res.json(alert);
-  } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -198,6 +144,61 @@ router.patch('/:id/status', auth, async (req, res) => {
           alert: populatedAlert,
         });
     }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// --- Other routes remain unchanged ---
+
+router.get('/completed', auth, async (req, res) => {
+    try {
+        const completedAlerts = await CompletedAlert.find()
+            .populate('userId', 'email firstName lastName')
+            .populate('assignedEMS', 'email firstName lastName phoneNumber')
+            .sort({ archivedAt: -1 });
+        res.json(completedAlerts);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+router.delete('/completed/:id', auth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden: Only admins can delete archived alerts.' });
+    }
+    try {
+        await CompletedAlert.findByIdAndDelete(req.params.id);
+        res.status(200).json({ message: 'Archived alert deleted successfully.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+router.get('/', auth, async (req, res) => {
+  try {
+    const alerts = await Alert.find()
+      .populate('userId', 'email firstName lastName')
+      .populate('assignedEMS', 'email firstName lastName phoneNumber')
+      .sort({ createdAt: -1 });
+
+    res.json(alerts);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const alert = await Alert.findById(req.params.id)
+      .populate('userId', 'email firstName lastName')
+      .populate('assignedEMS', 'email firstName lastName phoneNumber');
+
+    if (!alert) {
+      return res.status(404).json({ message: 'Alert not found' });
+    }
+
+    res.json(alert);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

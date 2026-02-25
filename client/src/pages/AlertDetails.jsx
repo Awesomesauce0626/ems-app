@@ -110,7 +110,7 @@ const AlertDetails = () => {
 
   const canUpdateStatus = user?.role === 'ems_personnel' || user?.role === 'admin';
   const currentStatusLabel = statusOptions.find(opt => opt.value === alertData.status)?.label || alertData.status;
-  const transformedImageUrl = getTransformedImageUrl(alertData.imageUrl);
+  const transformedImageUrl = alertData.imageUrl ? getTransformedImageUrl(alertData.imageUrl) : null;
 
   return (
     <div className="alert-details-container">
@@ -130,7 +130,7 @@ const AlertDetails = () => {
             {alertData.location?.address && <p><strong>Address:</strong> {alertData.location.address}</p>}
             <p><strong>Description:</strong> {alertData.description}</p>
             <p><strong>Patients:</strong> {alertData.patientCount}</p>
-            {alertData.imageUrl && (
+            {transformedImageUrl && (
               <>
                 <hr />
                 <h2>Incident Image</h2>
