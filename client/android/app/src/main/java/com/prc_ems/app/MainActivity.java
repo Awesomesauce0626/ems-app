@@ -9,7 +9,6 @@ import android.os.Build;
 import android.os.Bundle;
 
 import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.community.database.sqlite.CapacitorSQLite;
 
 public class MainActivity extends BridgeActivity {
     @Override

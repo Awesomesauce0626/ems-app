@@ -12,7 +12,7 @@ import { useSocket } from '@/context/SocketContext'; // Import useSocket
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://ems-app-e26y.onrender.com';
 const API = `${BACKEND_URL}/api`;
 
 // Fix leaflet icon issue

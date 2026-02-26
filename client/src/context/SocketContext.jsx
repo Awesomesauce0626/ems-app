@@ -14,8 +14,9 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      // Use the environment variable for the backend URL
-      const newSocket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', {
+      // Use the Vite environment variable for the backend URL
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://ems-app-e26y.onrender.com';
+      const newSocket = io(backendUrl, {
         auth: {
           token: token
         }
