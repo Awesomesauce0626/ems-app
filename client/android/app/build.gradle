@@ -47,9 +47,9 @@ android {
         }
         multiDexEnabled true
 
-        buildConfigField "String", "CLOUDINARY_CLOUD_NAME", ""${localProperties.getProperty('cloudinaryCloudName', '')}""
-        buildConfigField "String", "CLOUDINARY_API_KEY", ""${localProperties.getProperty('cloudinaryApiKey', '')}""
-        buildConfigField "String", "CLOUDINARY_API_SECRET", ""${localProperties.getProperty('cloudinaryApiSecret', '')}""
+        buildConfigField "String", "CLOUDINARY_CLOUD_NAME", "\"${localProperties.getProperty('cloudinaryCloudName', '')}\""
+        buildConfigField "String", "CLOUDINARY_API_KEY", "\"${localProperties.getProperty('cloudinaryApiKey', '')}\""
+        buildConfigField "String", "CLOUDINARY_API_SECRET", "\"${localProperties.getProperty('cloudinaryApiSecret', '')}\""
     }
     buildTypes {
         release {
