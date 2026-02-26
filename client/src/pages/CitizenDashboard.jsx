@@ -1,237 +1,246 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import Modal from '../components/Modal';
-import AlertForm from '../components/AlertForm';
-import LocationPickerMap from '../components/LocationPickerMap';
-import API_BASE_URL from '../api';
-import './CitizenDashboard.css';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import { Activity, LogOut, Siren, Clock, CheckCircle, AlertTriangle, Eye, Phone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
+import { useSocket } from '@/context/SocketContext'; // Import useSocket
+import { toast } from 'sonner';
+import 'leaflet/dist/leaflet.css';
 
-// Helper function to convert Data URL to Blob for upload
-const dataURLtoBlob = (dataurl) => {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while(n--){
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], {type:mime});
-}
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
-const CitizenDashboard = () => {
-  const { user, token, logout } = useAuth();
-  const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [location, setLocation] = useState(null);
-  const [initialCenter, setInitialCenter] = useState([14.113, 122.95]);
-  const [locationError, setLocationError] = useState(null);
+// Fix leaflet icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
-  useEffect(() => {
-    const fetchUserAlerts = async () => {
-      if (!token || !user) return;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/alerts`, { headers: { Authorization: `Bearer ${token}` } });
-        if (!res.ok) throw new Error('Failed to fetch alerts');
-        const allAlerts = await res.json();
-        const userAlerts = allAlerts.filter(a => a.userId?._id === user.id);
-        setAlerts(userAlerts);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUserAlerts();
-  }, [token, user]);
+const redIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
-  const openAlertModal = () => {
-    setLocation(null);
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const initialPos = { lat: position.coords.latitude, lng: position.coords.longitude };
-        setInitialCenter([initialPos.lat, initialPos.lng]);
-        setLocation(initialPos);
-        setIsModalOpen(true);
-      },
-      () => {
-        setLocationError('Could not get GPS. The map is optional.');
-        setLocation(null);
-        setIsModalOpen(true);
-      }
-    );
+const StatusBadge = ({ status }) => {
+  const variants = {
+    pending: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+    responding: 'bg-blue-100 text-blue-800 border border-blue-200',
+    en_route: 'bg-purple-100 text-purple-800 border border-purple-200',
+    completed: 'bg-green-100 text-green-800 border border-green-200'
   };
 
-  const handleLocationChange = (newLocation) => {
-    setLocation(newLocation);
-  };
-
-  const handleAlertSubmit = async (formData) => {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      let imageUrl = null;
-
-      // Step 1: Check if an image was attached
-      if (formData.image && formData.image.dataUrl) {
-        // Step 2: Get a secure upload signature from our backend
-        const signRes = await fetch(`${API_BASE_URL}/api/upload/sign`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!signRes.ok) throw new Error('Could not get upload signature from server');
-        const signData = await signRes.json();
-
-        // Step 3: Upload the image directly to Cloudinary
-        const imageBlob = dataURLtoBlob(formData.image.dataUrl);
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', imageBlob);
-        uploadFormData.append('api_key', signData.apikey);
-        uploadFormData.append('timestamp', signData.timestamp);
-        uploadFormData.append('signature', signData.signature);
-        uploadFormData.append('folder', 'incidents');
-
-        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signData.cloudname}/image/upload`;
-        const cloudinaryRes = await fetch(cloudinaryUrl, {
-          method: 'POST',
-          body: uploadFormData,
-        });
-        if (!cloudinaryRes.ok) throw new Error('Cloudinary upload failed');
-        const cloudinaryData = await cloudinaryRes.json();
-        imageUrl = cloudinaryData.secure_url;
-      }
-
-      // Step 4: Submit the alert with the image URL and user info
-      const alertData = {
-        ...formData,
-        imageUrl,
-        location,
-        reporterName: `${user.firstName} ${user.lastName}`,
-        reporterPhone: user.phoneNumber,
-      };
-
-      const res = await fetch(`${API_BASE_URL}/api/alerts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(alertData),
-      });
-
-      if (!res.ok) throw new Error('Failed to submit alert');
-
-      const newAlert = await res.json();
-      setAlerts(prev => [newAlert.alert, ...prev]);
-      setIsModalOpen(false);
-
-    } catch (err) {
-      console.error("Alert Submission Error:", err);
-      setError(err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleAccountDeletion = async () => {
-    const confirmation = window.confirm(
-      'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.'
-    );
-
-    if (confirmation) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/auth/delete-account`, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || 'Failed to delete account.');
-        }
-
-        alert('Your account has been successfully deleted.');
-        logout();
-      } catch (err) {
-        setError(err.message);
-        alert(`Error: ${err.message}`);
-      }
-    }
+  const labels = {
+    pending: 'Pending',
+    responding: 'Responding',
+    en_route: 'En Route',
+    completed: 'Completed'
   };
 
   return (
-    <div className="citizen-dashboard">
-      <header className="cd-header">
-        <Link to="/" className="header-logo-link">
-            <img src="/prc-logo.png" alt="PRC Logo" />
-            <span>PRC-CN EMS</span>
-        </Link>
-        <div className="user-info">
-          <h1>Welcome, {user.firstName}!</h1>
-          <p>Your personal emergency hub.</p>
-        </div>
-        <nav className="cd-nav">
-            {user?.role === 'admin' && (
-                <Link to="/dashboard/admin" className="nav-link admin-link">Return to Admin</Link>
-            )}
-            <button onClick={logout} className="logout-button">Logout</button>
-        </nav>
-      </header>
-
-      <main className="cd-main">
-        <div className="cd-actions">
-          <h2>Dashboard</h2>
-          <button onClick={openAlertModal} className="new-alert-button">Create New Alert</button>
-          <Link to="/first-aid" className="first-aid-button">View First-Aid Guide</Link>
-        </div>
-
-        <div className="alert-history">
-          <h3>Your Alert History</h3>
-          {loading && <p>Loading your alerts...</p>}
-          {error && <p className="error-message">{error}</p>}
-          {!loading && alerts.length === 0 && <p>You haven't submitted any alerts yet.</p>}
-          <ul className="alerts-list">
-            {alerts.map(alert => (
-              <li key={alert._id} className={`alert-item status-${alert.status.toLowerCase().replace(/\s+/g, '-')}`}>
-                <div className="alert-item-header">
-                  <span className="incident-type">{alert.incidentType}</span>
-                  <span className="status-badge">{alert.status}</span>
-                </div>
-                <div className="alert-item-body">
-                  <p><strong>Description:</strong> {alert.description}</p>
-                </div>
-                <div className="alert-item-footer">
-                  <small>{new Date(alert.createdAt).toLocaleString()}</small>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </main>
-
-      <footer className="cd-footer">
-        <p>
-          For account-related issues or to request account deletion, please contact support.
-          <button onClick={handleAccountDeletion} className="delete-account-link">Delete My Account</button>
-        </p>
-      </footer>
-
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div className="modal-map-wrapper">
-          <p className="map-optional-text">Optional: Drag the pin to the exact incident location.</p>
-          <LocationPickerMap center={initialCenter} onLocationChange={handleLocationChange} />
-        </div>
-        {locationError && <p className="location-error">{error}</p>}
-        <h2 style={{ marginTop: '1.5rem' }}>Alert Details</h2>
-        <AlertForm onSubmit={handleAlertSubmit} isSubmitting={isSubmitting} />
-      </Modal>
-    </div>
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${variants[status] || variants.pending}`}>
+      {labels[status] || status}
+    </span>
   );
 };
 
-export default CitizenDashboard;
+export default function CitizenDashboard() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const socket = useSocket();
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAlerts();
+    // Interval is no longer needed
+  }, []);
+
+  useEffect(() => {
+    if (socket && user) {
+      // A new alert was created by this user or affects them
+      socket.on('new-alert', (newAlert) => {
+          // We only want to add alerts that are relevant to this user
+          if (newAlert.userId?._id === user.userId) {
+            setAlerts((prevAlerts) => [newAlert, ...prevAlerts]);
+          }
+      });
+
+      // An alert's status was updated
+      socket.on('alert-status-update', (updatedAlert) => {
+          setAlerts((prevAlerts) =>
+              prevAlerts.map((a) => (a._id === updatedAlert._id ? updatedAlert : a))
+          );
+      });
+
+      // An alert was archived (completed)
+      socket.on('alert-archived', ({ alertId }) => {
+          setAlerts((prevAlerts) => prevAlerts.filter((a) => a._id !== alertId));
+      });
+
+      return () => {
+        socket.off('new-alert');
+        socket.off('alert-status-update');
+        socket.off('alert-archived');
+      };
+    }
+  }, [socket, user]);
+
+  const fetchAlerts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/alerts`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAlerts(response.data.filter(alert => alert.userId?._id === user.userId));
+    } catch (error) {
+      console.error('Error fetching alerts:', error);
+      toast.error('Failed to fetch alerts');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    toast.success('Logged out successfully');
+  };
+
+  const handleNewAlert = () => {
+    navigate('/quick-alert');
+  };
+
+  const defaultCenter = [14.1093, 122.9558]; // Camarines Norte coordinates
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-red-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#EE3224] rounded-full flex items-center justify-center">
+              <Activity className="w-5 h-5 text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Citizen Dashboard</h1>
+              <p className="text-xs text-gray-600">{user?.name}</p>
+            </div>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="ghost"
+            className="rounded-full hover:bg-gray-100"
+            data-testid="logout-btn"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid lg:grid-cols-12 gap-6">
+          {/* Left Column - Alerts List */}
+          <div className="lg:col-span-5">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">My Alerts</h2>
+              <Button
+                onClick={handleNewAlert}
+                className="rounded-full bg-[#EE3224] hover:bg-[#D92015] text-white"
+                data-testid="new-alert-btn"
+              >
+                <Siren className="w-4 h-4 mr-2" />
+                New Alert
+              </Button>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">Loading alerts...</p>
+              </div>
+            ) : alerts.length === 0 ? (
+              <div className="bg-white rounded-xl p-8 text-center border border-gray-100" data-testid="no-alerts-message">
+                <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">No alerts yet</p>
+                <p className="text-sm text-gray-500 mt-2">Create your first emergency alert</p>
+              </div>
+            ) : (
+              <div className="space-y-4" data-testid="alerts-list">
+                {alerts.map((alert) => (
+                  <div
+                    key={alert._id}
+                    className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => navigate(`/alert/${alert._id}`)}
+                    data-testid={`alert-item-${alert._id}`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-2">
+                        <Siren className="w-5 h-5 text-[#EE3224]" />
+                        <span className="font-semibold text-gray-900">{alert.incidentType}</span>
+                      </div>
+                      <StatusBadge status={alert.status} />
+                    </div>
+                    <p className="text-sm text-gray-700 mb-3 line-clamp-2">{alert.description}</p>
+                    <div className="flex items-center gap-4 text-xs text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(alert.createdAt).toLocaleString()}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {alert.reporterPhone}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column - Map */}
+          <div className="lg:col-span-7">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Alert Locations</h2>
+              <div className="h-[600px] rounded-lg overflow-hidden" data-testid="map-container">
+                <MapContainer
+                  center={alerts.length > 0 ? [alerts[0].location.latitude, alerts[0].location.longitude] : defaultCenter}
+                  zoom={13}
+                  style={{ height: '100%', width: '100%' }}
+                >
+                  <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  />
+                  {alerts.map((alert) => (
+                    <Marker
+                      key={alert._id}
+                      position={[alert.location.latitude, alert.location.longitude]}
+                      icon={redIcon}
+                    >
+                      <Popup>
+                        <div className="p-2">
+                          <p className="font-bold text-sm mb-1">{alert.incidentType}</p>
+                          <p className="text-xs text-gray-700 mb-2">{alert.description}</p>
+                          <StatusBadge status={alert.status} />
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MapContainer>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

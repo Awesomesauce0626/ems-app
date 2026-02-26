@@ -63,7 +63,7 @@ router.post('/', auth, async (req, res) => {
             android: {
                 priority: 'high',
                 notification: {
-                    channelId: 'ems_alerts',
+                    channelId: 'ems_alerts', // This is crucial for Android 8.0+
                 },
             },
             apns: {
