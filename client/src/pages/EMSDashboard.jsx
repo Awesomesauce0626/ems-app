@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { Activity, LogOut, Phone, Clock, Eye, AlertTriangle, TrendingUp, UserCheck, Volume2, VolumeX } from 'lucide-react';
+import { Activity, LogOut, Phone, Clock, Eye, AlertTriangle, TrendingUp, UserCheck, Volume2, VolumeX, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -74,37 +74,28 @@ export default function EMSDashboard() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
 
-  // --- Audio Ref ---
   const audioRef = useRef(new Audio('/alarm.mp3'));
 
   useEffect(() => {
     fetchData();
-    // Configure audio to loop when playing
     audioRef.current.loop = false;
   }, []);
 
-  // --- Handle Real-time Updates & Location ---
   useEffect(() => {
     if (socket) {
       socket.on('new-alert', (newAlert) => {
         setAlerts((prev) => [newAlert, ...prev]);
         fetchStats();
-
-        // --- WEB ALARM LOGIC ---
         if (user?.isOnDuty) {
             toast.info(`New Alert: ${newAlert.incidentType}`, {
-                duration: 10000, // Show for 10 seconds
+                duration: 10000,
                 action: {
                     label: 'Stop Alarm',
                     onClick: () => audioRef.current.pause()
                 }
             });
-
-            // Try to play sound
             audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(err => {
-                console.warn("Audio play blocked by browser. Click anywhere to enable.", err);
-            });
+            audioRef.current.play().catch(err => console.warn("Audio blocked", err));
         }
       });
 
@@ -122,13 +113,12 @@ export default function EMSDashboard() {
         setResponders(locations);
       });
 
-      // --- Location Tracking for ON DUTY personnel ---
       let watchId;
       if (user?.isOnDuty) {
           watchId = navigator.geolocation.watchPosition(
               (pos) => {
                   socket.emit('ems-location-update', {
-                      userId: user.id,
+                      userId: user.id || user._id,
                       name: `${user.firstName} ${user.lastName}`,
                       lat: pos.coords.latitude,
                       lng: pos.coords.longitude
@@ -150,14 +140,11 @@ export default function EMSDashboard() {
   }, [socket, user?.isOnDuty]);
 
   const enableAudio = () => {
-      // Browsers require a user gesture to enable audio
       audioRef.current.play().then(() => {
           audioRef.current.pause();
           setIsAudioEnabled(true);
           toast.success("Alert sounds enabled");
-      }).catch(err => {
-          console.error("Failed to enable audio", err);
-      });
+      }).catch(err => console.error("Failed to enable audio", err));
   };
 
   const fetchData = async () => {
@@ -203,11 +190,7 @@ export default function EMSDashboard() {
       try {
           await toggleOnDuty(checked);
           toast.success(`You are now ${checked ? 'ON DUTY' : 'OFF DUTY'}`);
-
-          // If turning on duty, also try to unlock audio
-          if (checked && !isAudioEnabled) {
-              enableAudio();
-          }
+          if (checked && !isAudioEnabled) enableAudio();
       } catch (error) {
           toast.error("Failed to update duty status");
       }
@@ -241,7 +224,17 @@ export default function EMSDashboard() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Audio Status */}
+            {/* View Reports Button */}
+            <Button
+                onClick={() => navigate('/reports')}
+                variant="outline"
+                size="sm"
+                className="hidden md:flex rounded-full border-gray-200 hover:bg-gray-50"
+            >
+                <FileText className="w-4 h-4 mr-2" />
+                View Reports
+            </Button>
+
             <button
                 onClick={enableAudio}
                 className={`p-2 rounded-full transition-colors ${isAudioEnabled ? 'text-green-600 bg-green-50' : 'text-gray-400 bg-gray-50 hover:text-red-500'}`}
@@ -302,7 +295,6 @@ export default function EMSDashboard() {
         )}
 
         <div className="grid lg:grid-cols-12 gap-6">
-          {/* Left Column - Map */}
           <div className="lg:col-span-7">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Live Alert Map</h2>
@@ -316,7 +308,6 @@ export default function EMSDashboard() {
                     url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   />
-                  {/* Alert Markers */}
                   {alerts.filter(a => a.status !== 'completed').map((alert) => (
                     <Marker
                       key={alert._id}
@@ -340,8 +331,6 @@ export default function EMSDashboard() {
                       </Popup>
                     </Marker>
                   ))}
-
-                  {/* On Duty Responder Markers */}
                   {responders.map((res) => (
                       <Marker
                         key={res.userId}
@@ -361,23 +350,32 @@ export default function EMSDashboard() {
             </div>
           </div>
 
-          {/* Right Column - Alerts List */}
           <div className="lg:col-span-5">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">All Alerts</h2>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[140px] rounded-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="responding">Responding</SelectItem>
-                    <SelectItem value="en_route">En Route</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                    <Button
+                        onClick={() => navigate('/reports')}
+                        size="sm"
+                        variant="ghost"
+                        className="md:hidden rounded-full h-8 w-8 p-0"
+                    >
+                        <FileText className="h-4 w-4" />
+                    </Button>
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="w-[140px] rounded-full h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="responding">Responding</SelectItem>
+                        <SelectItem value="en_route">En Route</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                </div>
               </div>
 
               {loading ? (
