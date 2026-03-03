@@ -50,7 +50,12 @@ router.post('/', auth, async (req, res) => {
 
     req.io.emit('new-alert', populatedAlert);
 
-    const staffUsers = await User.find({ role: { $in: ['ems_personnel', 'admin'] } });
+    // --- UPDATED: Only send push notifications to personnel who are ON DUTY ---
+    const staffUsers = await User.find({
+        role: { $in: ['ems_personnel', 'admin'] },
+        isOnDuty: true // Only those who are on duty
+    });
+
     const tokens = staffUsers.flatMap(user => user.fcmTokens);
 
     if (tokens.length > 0) {
@@ -63,25 +68,30 @@ router.post('/', auth, async (req, res) => {
             android: {
                 priority: 'high',
                 notification: {
-                    channelId: 'ems_alerts', // This is crucial for Android 8.0+
+                    channelId: 'ems_alerts',
+                    sound: 'siren_alarm',
+                    priority: 'high',
+                    visibility: 'public'
                 },
             },
             apns: {
                 payload: {
                     aps: {
-                        sound: {
-                            critical: 1,
-                            name: 'default',
-                            volume: 1.0,
-                        },
+                        sound: 'default',
+                        critical: 1,
+                        volume: 1.0,
                     },
                 },
             },
+            data: {
+                alertId: newAlert._id.toString(),
+                type: 'new_alert'
+            }
         };
 
         try {
-            await admin.messaging().sendMulticast(message);
-            console.log('Critical push notifications sent successfully.');
+            const response = await admin.messaging().sendEachForMulticast(message);
+            console.log(`${response.successCount} critical push notifications sent successfully.`);
         } catch (error) {
             console.error('Error sending push notifications:', error);
         }
@@ -148,8 +158,6 @@ router.patch('/:id/status', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
-
-// --- Other routes remain unchanged ---
 
 router.get('/completed', auth, async (req, res) => {
     try {

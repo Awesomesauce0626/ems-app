@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    index: true, // Add this line to create a database index
+    index: true,
   },
   password: {
     type: String,
@@ -19,6 +19,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['citizen', 'ems_personnel', 'admin'],
     default: 'citizen',
+  },
+  // --- ON DUTY STATUS: Whether EMS personnel is currently active and receiving alerts ---
+  isOnDuty: {
+    type: Boolean,
+    default: true, // Default to true so they start receiving alerts
   },
   // --- PUSH NOTIFICATIONS: Field to store user device tokens ---
   fcmTokens: {

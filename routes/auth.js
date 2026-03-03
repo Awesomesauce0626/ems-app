@@ -41,6 +41,7 @@ router.post('/register', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         phoneNumber: user.phoneNumber,
+        isOnDuty: user.isOnDuty,
       },
     });
   } catch (error) {
@@ -77,11 +78,43 @@ router.post('/login', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         phoneNumber: user.phoneNumber,
+        isOnDuty: user.isOnDuty,
       },
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
+});
+
+// --- NEW: Toggle On Duty Status ---
+router.patch('/toggle-on-duty', auth, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { isOnDuty } = req.body;
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { isOnDuty },
+            { new: true }
+        );
+
+        res.json({
+            message: `You are now ${isOnDuty ? 'ON DUTY' : 'OFF DUTY'}`,
+            isOnDuty: user.isOnDuty
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// --- NEW: Get Profile (to sync status) ---
+router.get('/profile', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId).select('-password');
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
 });
 
 router.post('/save-fcm-token', auth, async (req, res) => {

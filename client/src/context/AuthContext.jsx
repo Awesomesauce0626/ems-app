@@ -1,4 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios';
+import API_BASE_URL from '../api';
 
 const AuthContext = createContext(null);
 
@@ -8,22 +10,30 @@ export const AuthProvider = ({ children }) => {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      }
-    } catch (error) {
-      console.error("Failed to parse auth data from storage", error);
-      // If parsing fails, clear the stale data
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-    } finally {
-      // This is crucial: set loading to false only after checking storage
-      setIsAuthLoading(false);
-    }
+    const checkAuth = async () => {
+        try {
+          const storedToken = localStorage.getItem('token');
+          const storedUser = localStorage.getItem('user');
+          if (storedToken && storedUser) {
+            setToken(storedToken);
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+
+            // --- Sync user data from server (to get latest On Duty status) ---
+            const response = await axios.get(`${API_BASE_URL}/api/auth/profile`, {
+                headers: { Authorization: `Bearer ${storedToken}` }
+            });
+            const latestUser = response.data;
+            setUser(latestUser);
+            localStorage.setItem('user', JSON.stringify(latestUser));
+          }
+        } catch (error) {
+          console.error("Auth initialization error", error);
+        } finally {
+          setIsAuthLoading(false);
+        }
+    };
+    checkAuth();
   }, []);
 
   const login = (userData, authToken) => {
@@ -40,10 +50,26 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
   };
 
-  const value = { user, token, login, logout, isAuthenticated: !!token, isAuthLoading };
+  // --- NEW: Toggle On Duty Status ---
+  const toggleOnDuty = async (status) => {
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/api/auth/toggle-on-duty`,
+        { isOnDuty: status },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-  // While the initial authentication check is running, render a loading indicator.
-  // This prevents the rest of the app from rendering with an incomplete auth state.
+      const updatedUser = { ...user, isOnDuty: response.data.isOnDuty };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    } catch (error) {
+      console.error("Error toggling on duty status:", error);
+      throw error;
+    }
+  };
+
+  const value = { user, token, login, logout, toggleOnDuty, isAuthenticated: !!token, isAuthLoading };
+
   if (isAuthLoading) {
     return <div>Loading Application...</div>;
   }
