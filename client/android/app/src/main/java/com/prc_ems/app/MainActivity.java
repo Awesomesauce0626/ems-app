@@ -16,19 +16,18 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // Create the high-priority notification channel for new alerts
             NotificationManager manager = getSystemService(NotificationManager.class);
             
-            String channelId = "ems_alerts";
-            CharSequence channelName = "EMS Alerts";
-            String channelDescription = "High-priority notifications for new emergency alerts.";
+            // UPDATED Channel ID to force recreation on user devices
+            String channelId = "ems_alerts_v2"; 
+            CharSequence channelName = "EMS High-Priority Alerts";
+            String channelDescription = "Critical notifications for new emergency alerts. This channel uses a loud alarm sound.";
             int importance = NotificationManager.IMPORTANCE_HIGH;
 
             NotificationChannel channel = new NotificationChannel(channelId, channelName, importance);
             channel.setDescription(channelDescription);
             channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
 
-            // Define the sound for the notification channel
             Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.siren_alarm);
             AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)

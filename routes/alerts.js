@@ -50,10 +50,9 @@ router.post('/', auth, async (req, res) => {
 
     req.io.emit('new-alert', populatedAlert);
 
-    // --- UPDATED: Only send push notifications to personnel who are ON DUTY ---
     const staffUsers = await User.find({
         role: { $in: ['ems_personnel', 'admin'] },
-        isOnDuty: true // Only those who are on duty
+        isOnDuty: true
     });
 
     const tokens = staffUsers.flatMap(user => user.fcmTokens);
@@ -68,7 +67,7 @@ router.post('/', auth, async (req, res) => {
             android: {
                 priority: 'high',
                 notification: {
-                    channelId: 'ems_alerts',
+                    channelId: 'ems_alerts_v2', // Use the new channel ID
                     sound: 'siren_alarm',
                     priority: 'high',
                     visibility: 'public'
@@ -90,8 +89,7 @@ router.post('/', auth, async (req, res) => {
         };
 
         try {
-            const response = await admin.messaging().sendEachForMulticast(message);
-            console.log(`${response.successCount} critical push notifications sent successfully.`);
+            await admin.messaging().sendEachForMulticast(message);
         } catch (error) {
             console.error('Error sending push notifications:', error);
         }
@@ -102,11 +100,11 @@ router.post('/', auth, async (req, res) => {
       alert: populatedAlert,
     });
   } catch (error) {
-    console.error("Alert Creation Error:", error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// Other routes remain unchanged...
 router.patch('/:id/status', auth, async (req, res) => {
   try {
     const { status, note } = req.body;
