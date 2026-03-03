@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { Activity, LogOut, Phone, Clock, Eye, AlertTriangle, TrendingUp, UserCheck } from 'lucide-react';
+import { Activity, LogOut, Phone, Clock, Eye, AlertTriangle, TrendingUp, UserCheck, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -72,9 +72,15 @@ export default function EMSDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+
+  // --- Audio Ref ---
+  const audioRef = useRef(new Audio('/alarm.mp3'));
 
   useEffect(() => {
     fetchData();
+    // Configure audio to loop when playing
+    audioRef.current.loop = false;
   }, []);
 
   // --- Handle Real-time Updates & Location ---
@@ -83,7 +89,23 @@ export default function EMSDashboard() {
       socket.on('new-alert', (newAlert) => {
         setAlerts((prev) => [newAlert, ...prev]);
         fetchStats();
-        toast.info(`New Alert: ${newAlert.incidentType}`);
+
+        // --- WEB ALARM LOGIC ---
+        if (user?.isOnDuty) {
+            toast.info(`New Alert: ${newAlert.incidentType}`, {
+                duration: 10000, // Show for 10 seconds
+                action: {
+                    label: 'Stop Alarm',
+                    onClick: () => audioRef.current.pause()
+                }
+            });
+
+            // Try to play sound
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(err => {
+                console.warn("Audio play blocked by browser. Click anywhere to enable.", err);
+            });
+        }
       });
 
       socket.on('alert-status-update', (updatedAlert) => {
@@ -126,6 +148,17 @@ export default function EMSDashboard() {
       };
     }
   }, [socket, user?.isOnDuty]);
+
+  const enableAudio = () => {
+      // Browsers require a user gesture to enable audio
+      audioRef.current.play().then(() => {
+          audioRef.current.pause();
+          setIsAudioEnabled(true);
+          toast.success("Alert sounds enabled");
+      }).catch(err => {
+          console.error("Failed to enable audio", err);
+      });
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -170,6 +203,11 @@ export default function EMSDashboard() {
       try {
           await toggleOnDuty(checked);
           toast.success(`You are now ${checked ? 'ON DUTY' : 'OFF DUTY'}`);
+
+          // If turning on duty, also try to unlock audio
+          if (checked && !isAudioEnabled) {
+              enableAudio();
+          }
       } catch (error) {
           toast.error("Failed to update duty status");
       }
@@ -203,6 +241,15 @@ export default function EMSDashboard() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Audio Status */}
+            <button
+                onClick={enableAudio}
+                className={`p-2 rounded-full transition-colors ${isAudioEnabled ? 'text-green-600 bg-green-50' : 'text-gray-400 bg-gray-50 hover:text-red-500'}`}
+                title={isAudioEnabled ? "Alert sounds active" : "Click to enable alert sounds"}
+            >
+                {isAudioEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
+
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full border border-gray-100">
                 <UserCheck className={`w-4 h-4 ${user?.isOnDuty ? 'text-green-600' : 'text-gray-400'}`} />
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-700">On Duty</span>
