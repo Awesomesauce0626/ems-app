@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 // Page Components
 import LandingPage from './pages/LandingPage';
@@ -41,6 +41,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Supporting both /dashboard/citizen and /citizen-dashboard for compatibility */}
         <Route
           path="/dashboard/citizen"
           element={
@@ -49,6 +51,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/citizen-dashboard" element={<Navigate to="/dashboard/citizen" replace />} />
+
+        {/* Supporting both /dashboard/ems and /ems-dashboard for compatibility */}
         <Route
           path="/dashboard/ems"
           element={
@@ -57,6 +62,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/ems-dashboard" element={<Navigate to="/dashboard/ems" replace />} />
+
         <Route
           path="/alert/:id"
           element={
