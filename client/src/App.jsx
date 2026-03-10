@@ -9,6 +9,7 @@ import CitizenDashboard from './pages/CitizenDashboard';
 import EMSDashboard from './pages/EMSDashboard';
 import AlertDetails from './pages/AlertDetails';
 import QuickAccessForm from './pages/QuickAccessForm';
+import QuickAlert from './pages/QuickAlert'; // Added import
 import ReportsPage from './pages/ReportsPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AuthCallbackHandler from './pages/AuthCallbackHandler';
@@ -24,6 +25,9 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Supporting both /quick-alert and /quick-access */}
+        <Route path="/quick-alert" element={<QuickAlert />} />
         <Route path="/quick-access" element={<QuickAccessForm />} />
 
         {/* --- ENHANCEMENT: Add routes for the First-Aid Guide --- */}
