@@ -19,7 +19,6 @@ router.post('/', auth, async (req, res) => {
       imageUrl,
     } = req.body;
 
-    // Robust address handling: Use provided address or coordinates as fallback
     const finalAddress = address || (location ? `Lat: ${location.lat}, Lng: ${location.lng}` : "Location not provided");
 
     const formattedLocation = {
@@ -35,7 +34,7 @@ router.post('/', auth, async (req, res) => {
       reporterName: reporterName || "Anonymous",
       reporterPhone: reporterPhone || "N/A",
       location: formattedLocation,
-      incidentType: incidentType || "Emergency",
+      incidentType: incidentType || "other",
       description: description || "",
       patientCount: parseInt(patientCount) || 1,
       imageUrl: imageUrl || null,
@@ -49,19 +48,18 @@ router.post('/', auth, async (req, res) => {
 
     req.io.emit('new-alert', populatedAlert);
 
-    // Only send push notifications to personnel who are ON DUTY
     const staffUsers = await User.find({
         role: { $in: ['ems_personnel', 'admin'] },
         isOnDuty: true
     });
 
-    const tokens = staffUsers.flatMap(user => user.fcmTokens);
+    const tokens = staffUsers.flatMap(user => Array.isArray(user.fcmTokens) ? user.fcmTokens : []);
 
     if (tokens.length > 0) {
         const message = {
             notification: {
                 title: 'New Emergency Alert!',
-                body: `Incident: ${incidentType} at ${finalAddress}`,
+                body: `Incident: ${populatedAlert.incidentType} at ${finalAddress}`,
             },
             tokens: tokens,
             android: {
@@ -75,12 +73,14 @@ router.post('/', auth, async (req, res) => {
             },
             data: {
                 alertId: newAlert._id.toString(),
-                type: 'new_alert'
+                type: 'new_alert',
+                imageUrl: imageUrl || ''
             }
         };
 
         try {
-            await admin.messaging().sendEachForMulticast(message);
+            // Using sendMulticast for v11 compatibility
+            await admin.messaging().sendMulticast(message);
         } catch (error) {
             console.error('Error sending push notifications:', error);
         }
@@ -96,7 +96,7 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// ... (Rest of the file remains as restored previously)
+// ... (Rest of the file remains stable)
 router.patch('/:id/status', auth, async (req, res) => {
   try {
     const { status, note } = req.body;
@@ -128,6 +128,15 @@ router.patch('/:id/status', auth, async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
+});
+
+router.get('/completed', auth, async (req, res) => {
+    try {
+        const completedAlerts = await CompletedAlert.find().populate('userId', 'firstName lastName').sort({ archivedAt: -1 });
+        res.json(completedAlerts);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 router.get('/', auth, async (req, res) => {

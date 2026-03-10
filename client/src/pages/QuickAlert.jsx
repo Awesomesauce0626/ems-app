@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { MapPin, Phone, User, Siren, ArrowLeft, Camera, CheckCircle, Map } from 'lucide-react';
+import { MapPin, Phone, Siren, ArrowLeft, Camera, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,9 +14,23 @@ import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capa
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://ems-app-e26y.onrender.com';
 const API = `${BACKEND_URL}/api`;
 
+const incidentTypes = [
+  { value: 'cardiac_arrest', label: 'Cardiac Arrest' },
+  { value: 'respiratory_distress', label: 'Respiratory Distress' },
+  { value: 'severe_bleeding', label: 'Severe Bleeding' },
+  { value: 'vehicular_accident', label: 'Vehicular Accident' },
+  { value: 'trauma', label: 'Trauma / Injury' },
+  { value: 'stroke', label: 'Suspected Stroke' },
+  { value: 'allergic_reaction', label: 'Severe Allergic Reaction' },
+  { value: 'poisoning', label: 'Poisoning / Overdose' },
+  { value: 'burn', label: 'Major Burn' },
+  { value: 'drowning', label: 'Drowning' },
+  { value: 'other', label: 'Other' },
+];
+
 export default function QuickAlert() {
   const navigate = useNavigate();
-  const { login, token, user } = useAuth();
+  const { token, user } = useAuth();
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
@@ -112,11 +126,14 @@ export default function QuickAlert() {
       return;
     }
 
+    if (!formData.emergency_type) {
+        toast.error('Please select an emergency type.');
+        return;
+    }
+
     setLoading(true);
     try {
-      let currentToken = token;
-
-      // Create alert
+      // Create alert with corrected incidentType
       await axios.post(
         `${API}/alerts`,
         {
@@ -124,12 +141,12 @@ export default function QuickAlert() {
           reporterPhone: formData.phone,
           location,
           address: formData.address,
-          incidentType: formData.emergency_type,
+          incidentType: formData.emergency_type, // Now uses the correct backend keys
           description: formData.description,
           patientCount: parseInt(formData.num_patients),
           imageUrl: imageUrl,
         },
-        { headers: { Authorization: `Bearer ${currentToken}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       toast.success('Emergency alert sent successfully!');
@@ -213,12 +230,9 @@ export default function QuickAlert() {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Cardiac Emergency">Cardiac Emergency</SelectItem>
-                      <SelectItem value="Vehicle Accident">Vehicle Accident</SelectItem>
-                      <SelectItem value="Trauma/Injury">Trauma/Injury</SelectItem>
-                      <SelectItem value="Respiratory Distress">Respiratory Distress</SelectItem>
-                      <SelectItem value="Stroke">Stroke</SelectItem>
-                      <SelectItem value="Other Emergency">Other Emergency</SelectItem>
+                      {incidentTypes.map(type => (
+                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
