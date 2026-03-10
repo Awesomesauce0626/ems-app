@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { MapPin, Phone, User, Siren, ArrowLeft, Camera, CheckCircle } from 'lucide-react';
+import { MapPin, Phone, User, Siren, ArrowLeft, Camera, CheckCircle, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,22 +11,22 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://ems-app-e26y.onrender.com';
 const API = `${BACKEND_URL}/api`;
 
 export default function QuickAlert() {
   const navigate = useNavigate();
-  const { login, token } = useAuth(); // Use existing token if available
+  const { login, token, user } = useAuth();
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    age: '',
-    medical_conditions: '',
+    name: user?.firstName ? `${user.firstName} ${user.lastName}` : '',
+    phone: user?.phoneNumber || '',
+    address: '',
     num_patients: '1',
     emergency_type: '',
     description: ''
@@ -46,48 +46,55 @@ export default function QuickAlert() {
             lng: position.coords.longitude
           });
           setGettingLocation(false);
-          toast.success('Location captured successfully');
+          toast.success('Location coordinates captured');
         },
         (error) => {
           console.error('Error getting location:', error);
           setGettingLocation(false);
-          toast.error('Failed to get location. Please enable location services.');
+          toast.error('Failed to get location. Please enable GPS.');
         }
       );
     } else {
       setGettingLocation(false);
-      toast.error('Geolocation is not supported by this browser.');
+      toast.error('Geolocation is not supported.');
     }
   };
 
   const handleTakePhoto = async () => {
     try {
       const image = await CapacitorCamera.getPhoto({
-        quality: 90,
+        quality: 50,
         allowEditing: false,
-        resultType: CameraResultType.Uri,
-        source: CameraSource.Camera
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Prompt,
+        width: 800,
       });
 
-      if (image.webPath) {
+      if (image.base64String) {
         setIsUploading(true);
-        const blob = await fetch(image.webPath).then(r => r.blob());
-        const uploadData = new FormData();
-        uploadData.append('file', blob, `incident-${Date.now()}.jpg`);
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+        const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-        const response = await axios.post(`${API}/upload`, uploadData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          }
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', `data:image/${image.format};base64,${image.base64String}`);
+        uploadFormData.append('upload_preset', uploadPreset);
+
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: uploadFormData,
         });
 
-        setImageUrl(response.data.imageUrl);
-        toast.success('Image uploaded successfully.');
+        const uploadResult = await response.json();
+        if (uploadResult.secure_url) {
+            setImageUrl(uploadResult.secure_url);
+            toast.success('Image attached successfully.');
+        } else {
+            throw new Error("Upload failed");
+        }
       }
     } catch (error) {
-      console.error('Error taking photo or uploading:', error);
-      toast.error('Failed to process image. Please try again.');
+      console.error('Error taking photo:', error);
+      toast.error('Failed to process image.');
     } finally {
       setIsUploading(false);
     }
@@ -101,7 +108,7 @@ export default function QuickAlert() {
     e.preventDefault();
 
     if (!location) {
-      toast.error('Location is required. Please allow location access.');
+      toast.error('GPS coordinates are required.');
       return;
     }
 
@@ -109,38 +116,27 @@ export default function QuickAlert() {
     try {
       let currentToken = token;
 
-      // If user is not logged in, create a quick-access user
-      if (!currentToken) {
-        const authResponse = await axios.post(`${API}/auth/quick-access`, {
-          name: formData.name,
-          phone: formData.phone
-        });
-        const { token: newToken, user } = authResponse.data;
-        login(newToken, user); // Log the user in
-        currentToken = newToken;
-      }
-
-      // Create alert with the captured data
+      // Create alert
       await axios.post(
         `${API}/alerts`,
         {
           reporterName: formData.name,
           reporterPhone: formData.phone,
           location,
-          address: "User-provided location", // This could be improved with reverse geocoding
+          address: formData.address,
           incidentType: formData.emergency_type,
           description: formData.description,
           patientCount: parseInt(formData.num_patients),
-          imageUrl: imageUrl, // Add the image URL here
+          imageUrl: imageUrl,
         },
         { headers: { Authorization: `Bearer ${currentToken}` } }
       );
 
       toast.success('Emergency alert sent successfully!');
-      navigate('/citizen-dashboard');
+      navigate('/dashboard/citizen');
     } catch (error) {
       console.error('Error submitting alert:', error);
-      toast.error(error.response?.data?.message || 'Failed to send alert. Please try again.');
+      toast.error(error.response?.data?.message || 'Failed to send alert.');
     } finally {
       setLoading(false);
     }
@@ -151,108 +147,100 @@ export default function QuickAlert() {
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-6">
           <Button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(-1)}
             variant="ghost"
             className="mb-4 hover:bg-gray-100 rounded-full"
-            data-testid="back-button"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
 
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 bg-[#EE3224] rounded-full flex items-center justify-center glow-animation">
+            <div className="w-16 h-16 bg-[#EE3224] rounded-full flex items-center justify-center shadow-lg shadow-red-200">
               <Siren className="w-8 h-8 text-white" strokeWidth={2} />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Emergency Alert</h1>
-              <p className="text-gray-600">Fill in the details quickly</p>
+              <p className="text-gray-600">Provide incident details</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 p-8">
-          {/* Location Status */}
+        <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-8">
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <div className="flex items-center gap-3">
-              <MapPin className={`w-5 h-5 ${location ? 'text-green-600' : 'text-gray-400'}`} />
+              <MapPin className={`w-5 h-5 ${location ? 'text-green-600' : 'text-red-500'}`} />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">
-                  {gettingLocation ? 'Getting your location...' : location ? 'Location Captured' : 'Location Required'}
+                <p className="text-sm font-bold text-gray-900">
+                  {gettingLocation ? 'Capturing GPS...' : location ? 'GPS Coordinates Captured' : 'GPS Required'}
                 </p>
                 {location && (
-                  <p className="text-xs text-gray-600">
-                    Lat: {location.lat.toFixed(6)}, Lng: {location.lng.toFixed(6)}
+                  <p className="text-xs text-gray-600 font-mono">
+                    {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
                   </p>
                 )}
               </div>
               {!location && (
-                <Button
-                  onClick={getLocation}
-                  size="sm"
-                  className="rounded-full bg-[#EE3224] hover:bg-[#D92015]"
-                  data-testid="get-location-btn"
-                >
-                  Get Location
+                <Button onClick={getLocation} size="sm" variant="outline" className="rounded-full">
+                  Retry GPS
                 </Button>
               )}
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6" data-testid="alert-form">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="name" className="text-sm font-bold uppercase tracking-wider text-gray-700">Name *</Label>
-                <Input id="name" name="name" value={formData.name} onChange={handleChange} required className="mt-2 rounded-lg border-gray-300" placeholder="Your full name" data-testid="name-input" />
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-xs font-bold uppercase text-gray-500">Your Name *</Label>
+                <Input id="name" name="name" value={formData.name} onChange={handleChange} required className="rounded-lg h-12" placeholder="Full name" />
               </div>
-              <div>
-                <Label htmlFor="phone" className="text-sm font-bold uppercase tracking-wider text-gray-700">Phone Number *</Label>
-                <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} required className="mt-2 rounded-lg border-gray-300" placeholder="09XXXXXXXXX" data-testid="phone-input" />
-              </div>
-              <div>
-                <Label htmlFor="age" className="text-sm font-bold uppercase tracking-wider text-gray-700">Age *</Label>
-                <Input id="age" name="age" type="number" value={formData.age} onChange={handleChange} required className="mt-2 rounded-lg border-gray-300" placeholder="Age" data-testid="age-input" />
-              </div>
-              <div>
-                <Label htmlFor="num_patients" className="text-sm font-bold uppercase tracking-wider text-gray-700">Number of Patients *</Label>
-                <Input id="num_patients" name="num_patients" type="number" value={formData.num_patients} onChange={handleChange} required min="1" className="mt-2 rounded-lg border-gray-300" data-testid="num-patients-input" />
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-xs font-bold uppercase text-gray-500">Contact Number *</Label>
+                <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} required className="rounded-lg h-12" placeholder="09XXXXXXXXX" />
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="emergency_type" className="text-sm font-bold uppercase tracking-wider text-gray-700">Emergency Type *</Label>
-              <Select name="emergency_type" value={formData.emergency_type} onValueChange={(value) => setFormData({ ...formData, emergency_type: value })} required>
-                <SelectTrigger className="mt-2 rounded-lg border-gray-300" data-testid="emergency-type-select">
-                  <SelectValue placeholder="Select emergency type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Cardiac Emergency">Cardiac Emergency</SelectItem>
-                  <SelectItem value="Trauma/Injury">Trauma/Injury</SelectItem>
-                  <SelectItem value="Respiratory Distress">Respiratory Distress</SelectItem>
-                  <SelectItem value="Stroke">Stroke</SelectItem>
-                  <SelectItem value="Severe Bleeding">Severe Bleeding</SelectItem>
-                  <SelectItem value="Vehicle Accident">Vehicle Accident</SelectItem>
-                  <SelectItem value="Other Emergency">Other Emergency</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-2">
+              <Label htmlFor="address" className="text-xs font-bold uppercase text-gray-500">Exact Location / Landmarks *</Label>
+              <Input id="address" name="address" value={formData.address} onChange={handleChange} required className="rounded-lg h-12 border-red-100 focus:border-red-500" placeholder="e.g. In front of Jollibee, Brgy. 1" />
             </div>
 
-            <div>
-              <Label htmlFor="medical_conditions" className="text-sm font-bold uppercase tracking-wider text-gray-700">Medical Conditions</Label>
-              <Input id="medical_conditions" name="medical_conditions" value={formData.medical_conditions} onChange={handleChange} className="mt-2 rounded-lg border-gray-300" placeholder="Any known medical conditions, allergies, medications" data-testid="medical-conditions-input" />
+            <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="emergency_type" className="text-xs font-bold uppercase text-gray-500">Emergency Type *</Label>
+                  <Select name="emergency_type" value={formData.emergency_type} onValueChange={(value) => setFormData({ ...formData, emergency_type: value })} required>
+                    <SelectTrigger className="h-12 rounded-lg">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cardiac Emergency">Cardiac Emergency</SelectItem>
+                      <SelectItem value="Vehicle Accident">Vehicle Accident</SelectItem>
+                      <SelectItem value="Trauma/Injury">Trauma/Injury</SelectItem>
+                      <SelectItem value="Respiratory Distress">Respiratory Distress</SelectItem>
+                      <SelectItem value="Stroke">Stroke</SelectItem>
+                      <SelectItem value="Other Emergency">Other Emergency</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="num_patients" className="text-xs font-bold uppercase text-gray-500">Patients *</Label>
+                  <Input id="num_patients" name="num_patients" type="number" value={formData.num_patients} onChange={handleChange} required min="1" className="h-12 rounded-lg" />
+                </div>
             </div>
 
-            <div>
-              <Label htmlFor="description" className="text-sm font-bold uppercase tracking-wider text-gray-700">Description *</Label>
-              <Textarea id="description" name="description" value={formData.description} onChange={handleChange} required className="mt-2 rounded-lg border-gray-300" rows={4} placeholder="Describe the emergency situation in detail..." data-testid="description-input" />
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-xs font-bold uppercase text-gray-500">Description (Optional)</Label>
+              <Textarea id="description" name="description" value={formData.description} onChange={handleChange} className="rounded-lg min-h-[100px]" placeholder="Briefly describe the situation..." />
             </div>
 
-            <div>
-                <Label className="text-sm font-bold uppercase tracking-wider text-gray-700">Attach Photo</Label>
+            <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase text-gray-500">Incident Photo</Label>
                 {imageUrl ? (
-                    <div className="mt-2 flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <CheckCircle className="w-5 h-5 text-green-600"/>
-                        <p className="text-sm text-green-800 font-medium">Image attached successfully.</p>
+                    <div className="relative rounded-lg overflow-hidden border-2 border-green-100 shadow-sm h-40">
+                        <img src={imageUrl} alt="Attached" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-green-600/10 flex items-center justify-center">
+                            <CheckCircle className="w-10 h-10 text-green-600 drop-shadow-md"/>
+                        </div>
                     </div>
                 ) : (
                     <Button
@@ -260,11 +248,10 @@ export default function QuickAlert() {
                         onClick={handleTakePhoto}
                         disabled={isUploading}
                         variant="outline"
-                        className="w-full mt-2 rounded-lg border-gray-300 flex items-center justify-center gap-2"
-                        data-testid="attach-photo-btn"
+                        className="w-full h-24 border-dashed border-2 rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-red-50 hover:border-red-200 transition-all"
                     >
-                        <Camera className="w-4 h-4"/>
-                        {isUploading ? 'Uploading...' : 'Open Camera & Attach'}
+                        <Camera className="w-6 h-6 text-gray-400"/>
+                        <span className="text-xs font-bold text-gray-500 uppercase">Attach Photo</span>
                     </Button>
                 )}
             </div>
@@ -272,10 +259,9 @@ export default function QuickAlert() {
             <Button
               type="submit"
               disabled={loading || !location || isUploading}
-              className="w-full rounded-full bg-[#EE3224] hover:bg-[#D92015] text-white font-bold py-6 text-lg shadow-lg hover:shadow-xl transition-all"
-              data-testid="submit-alert-btn"
+              className="w-full rounded-xl bg-[#EE3224] hover:bg-[#D92015] text-white font-bold py-8 text-xl shadow-lg shadow-red-100"
             >
-              {loading ? 'Sending Alert...' : 'Send Emergency Alert'}
+              {loading ? 'Sending Alert...' : 'Submit Emergency Alert'}
             </Button>
           </form>
         </div>
